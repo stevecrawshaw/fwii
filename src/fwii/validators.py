@@ -5,7 +5,6 @@ Validates data quality, identifies issues, and generates validation reports.
 
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -329,9 +328,7 @@ class HistoricWarningsValidator:
                 )
             )
 
-    def _check_timestamp_consistency(
-        self, df: pl.DataFrame, report: ValidationReport
-    ):
+    def _check_timestamp_consistency(self, df: pl.DataFrame, report: ValidationReport):
         """Check for timestamp consistency issues."""
         if "timeSeverityChanged" not in df.columns:
             return
@@ -360,9 +357,9 @@ class HistoricWarningsValidator:
         # Calculate completeness for each optional field
         optional_fields = ["timeSeverityChanged", "timeMessageChanged", "isTidal"]
 
-        for field in optional_fields:
-            if field in df.columns:
-                non_null = df.filter(pl.col(field).is_not_null()).height
+        for field_name in optional_fields:
+            if field_name in df.columns:
+                non_null = df.filter(pl.col(field_name).is_not_null()).height
                 completeness_pct = (non_null / len(df)) * 100
 
                 severity = "warning" if completeness_pct < 50 else "info"
@@ -370,7 +367,7 @@ class HistoricWarningsValidator:
                 report.add_issue(
                     ValidationIssue(
                         severity=severity,
-                        category=f"Field Completeness: {field}",
+                        category=f"Field Completeness: {field_name}",
                         message=f"Field is {completeness_pct:.1f}% complete",
                         count=len(df) - non_null,
                     )
@@ -388,9 +385,7 @@ class HistoricWarningsValidator:
         Returns:
             ValidationReport with coverage analysis
         """
-        report = ValidationReport(
-            total_records=len(df), valid_records=len(df)
-        )
+        report = ValidationReport(total_records=len(df), valid_records=len(df))
 
         # Get actual warning areas in the data
         actual_areas = set(df["fwdCode"].unique().to_list())

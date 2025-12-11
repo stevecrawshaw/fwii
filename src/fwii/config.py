@@ -1,8 +1,9 @@
 """Configuration management for FWII project."""
 
-import yaml
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 
 class Config:
@@ -127,7 +128,7 @@ class Config:
             Configuration value or default
 
         Example:
-            >>> config.get('api.timeout')
+            >>> config.get("api.timeout")
             30
         """
         keys = key.split(".")

@@ -229,9 +229,11 @@ class FloodWarningsDatabase:
             data_year = None
             if "timeRaised" in df_filtered.columns:
                 # Determine year from data
-                years = df_filtered.select(
-                    pl.col("timeRaised").dt.year().unique()
-                ).to_series().to_list()
+                years = (
+                    df_filtered.select(pl.col("timeRaised").dt.year().unique())
+                    .to_series()
+                    .to_list()
+                )
                 if len(years) == 1:
                     data_year = years[0]
 

@@ -8,7 +8,6 @@ Dataset URL: https://environment.data.gov.uk/dataset/88bed270-d465-11e4-8669-f0d
 
 import logging
 from pathlib import Path
-from typing import Literal
 from zipfile import ZipFile
 
 import httpx
@@ -89,7 +88,7 @@ class HistoricWarningsFetcher:
             return output_path
 
         # Download the file
-        logger.info(f"Downloading complete historic flood warnings dataset")
+        logger.info("Downloading complete historic flood warnings dataset")
         logger.info(f"URL: {self.DATASET_URL}")
 
         try:
@@ -110,12 +109,12 @@ class HistoricWarningsFetcher:
                         if total_size > 0 and downloaded_size % (1024 * 1024) < 8192:
                             percent = (downloaded_size / total_size) * 100
                             logger.info(
-                                f"Download progress: {downloaded_size / (1024*1024):.1f}MB / "
-                                f"{total_size / (1024*1024):.1f}MB ({percent:.1f}%)"
+                                f"Download progress: {downloaded_size / (1024 * 1024):.1f}MB / "
+                                f"{total_size / (1024 * 1024):.1f}MB ({percent:.1f}%)"
                             )
 
             logger.info(
-                f"Download complete: {downloaded_size / (1024*1024):.1f}MB saved to {output_path}"
+                f"Download complete: {downloaded_size / (1024 * 1024):.1f}MB saved to {output_path}"
             )
 
         except httpx.HTTPStatusError as e:

@@ -1,9 +1,10 @@
 """Environment Agency Flood Monitoring API client."""
 
-import time
-import httpx
-from typing import Any
 import logging
+import time
+from typing import Any
+
+import httpx
 
 from .config import Config
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class FloodMonitoringAPIError(Exception):
     """Base exception for API errors."""
+
     pass
 
 
@@ -85,7 +87,9 @@ class FloodMonitoringClient:
 
         raise FloodMonitoringAPIError("Unexpected error in request logic")
 
-    def _get_all_pages(self, url: str, params: dict[str, Any] | None = None) -> list[dict]:
+    def _get_all_pages(
+        self, url: str, params: dict[str, Any] | None = None
+    ) -> list[dict]:
         """Fetch all pages from a paginated endpoint.
 
         Args:
@@ -127,7 +131,7 @@ class FloodMonitoringClient:
 
         Example:
             >>> client = FloodMonitoringClient()
-            >>> areas = client.get_flood_areas(county='Bristol')
+            >>> areas = client.get_flood_areas(county="Bristol")
             >>> len(areas)
             15
         """
@@ -165,7 +169,7 @@ class FloodMonitoringClient:
             "Bristol",  # Matches "Bristol" and "City of Bristol"
             "Bath and North East Somerset",
             "South Gloucestershire",
-            "North Somerset"
+            "North Somerset",
         ]
 
         for area in all_areas:
@@ -173,9 +177,7 @@ class FloodMonitoringClient:
             if any(keyword in county_str for keyword in county_keywords):
                 woe_areas.append(area)
 
-        logger.info(
-            f"Filtered to {len(woe_areas)} areas in West of England counties"
-        )
+        logger.info(f"Filtered to {len(woe_areas)} areas in West of England counties")
 
         return woe_areas
 

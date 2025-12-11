@@ -7,7 +7,6 @@ based on baseline year (2020) normalization.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import polars as pl
 import yaml
@@ -68,10 +67,10 @@ class IndicatorCalculator:
 
     def __init__(
         self,
-        baseline: Optional[BaselineScores] = None,
-        duration_config: Optional[DurationConfig] = None,
+        baseline: BaselineScores | None = None,
+        duration_config: DurationConfig | None = None,
         fluvial_weight: float = 0.55,
-        coastal_weight: float = 0.45
+        coastal_weight: float = 0.45,
     ):
         """
         Initialize indicator calculator.
@@ -98,29 +97,31 @@ class IndicatorCalculator:
         else:
             self.baseline = baseline
 
-    def _load_baseline(self) -> Optional[BaselineScores]:
+    def _load_baseline(self) -> BaselineScores | None:
         """Load baseline scores from configuration file."""
-        baseline_path = Path(__file__).parent.parent.parent / 'config' / 'baseline_2020.yaml'
+        baseline_path = (
+            Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
+        )
 
         if not baseline_path.exists():
             # No baseline file exists yet
             return None
 
-        with open(baseline_path, 'r') as f:
+        with open(baseline_path) as f:
             data = yaml.safe_load(f)
 
         return BaselineScores(
-            year=data['year'],
-            fluvial_score=data['fluvial_score'],
-            coastal_score=data['coastal_score'],
-            total_score=data['total_score'],
-            fluvial_hours=data.get('fluvial_hours', 0.0),
-            coastal_hours=data.get('coastal_hours', 0.0),
-            fluvial_events=data.get('fluvial_events', 0),
-            coastal_events=data.get('coastal_events', 0),
+            year=data["year"],
+            fluvial_score=data["fluvial_score"],
+            coastal_score=data["coastal_score"],
+            total_score=data["total_score"],
+            fluvial_hours=data.get("fluvial_hours", 0.0),
+            coastal_hours=data.get("coastal_hours", 0.0),
+            fluvial_events=data.get("fluvial_events", 0),
+            coastal_events=data.get("coastal_events", 0),
         )
 
-    def save_baseline(self, baseline: BaselineScores, output_path: Optional[Path] = None):
+    def save_baseline(self, baseline: BaselineScores, output_path: Path | None = None):
         """
         Save baseline scores to configuration file.
 
@@ -129,31 +130,31 @@ class IndicatorCalculator:
             output_path: Path to save to (default: config/baseline_2020.yaml)
         """
         if output_path is None:
-            output_path = Path(__file__).parent.parent.parent / 'config' / 'baseline_2020.yaml'
+            output_path = (
+                Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
+            )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         data = {
-            'year': baseline.year,
-            'fluvial_score': baseline.fluvial_score,
-            'coastal_score': baseline.coastal_score,
-            'total_score': baseline.total_score,
-            'fluvial_hours': baseline.fluvial_hours,
-            'coastal_hours': baseline.coastal_hours,
-            'fluvial_events': baseline.fluvial_events,
-            'coastal_events': baseline.coastal_events,
-            'description': f'Baseline scores for {baseline.year} (normalized to 100)',
-            'created_at': str(Path(__file__).parent.parent.parent / 'config' / 'baseline_2020.yaml'),
+            "year": baseline.year,
+            "fluvial_score": baseline.fluvial_score,
+            "coastal_score": baseline.coastal_score,
+            "total_score": baseline.total_score,
+            "fluvial_hours": baseline.fluvial_hours,
+            "coastal_hours": baseline.coastal_hours,
+            "fluvial_events": baseline.fluvial_events,
+            "coastal_events": baseline.coastal_events,
+            "description": f"Baseline scores for {baseline.year} (normalized to 100)",
+            "created_at": str(
+                Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
+            ),
         }
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
-    def calculate_indicators(
-        self,
-        df: pl.DataFrame,
-        year: int
-    ) -> NormalizedIndicators:
+    def calculate_indicators(self, df: pl.DataFrame, year: int) -> NormalizedIndicators:
         """
         Calculate flood warning intensity indicators for a given year.
 
@@ -180,13 +181,13 @@ class IndicatorCalculator:
         if self.baseline is None or year == self.baseline.year:
             baseline = BaselineScores(
                 year=year,
-                fluvial_score=scores['fluvial_score'],
-                coastal_score=scores['coastal_score'],
-                total_score=scores['total_score'],
-                fluvial_hours=scores['fluvial_hours'],
-                coastal_hours=scores['coastal_hours'],
-                fluvial_events=scores['fluvial_events'],
-                coastal_events=scores['coastal_events'],
+                fluvial_score=scores["fluvial_score"],
+                coastal_score=scores["coastal_score"],
+                total_score=scores["total_score"],
+                fluvial_hours=scores["fluvial_hours"],
+                coastal_hours=scores["coastal_hours"],
+                fluvial_events=scores["fluvial_events"],
+                coastal_events=scores["coastal_events"],
             )
 
             if self.baseline is None:
@@ -194,20 +195,20 @@ class IndicatorCalculator:
 
             return NormalizedIndicators(
                 year=year,
-                fluvial_score_raw=scores['fluvial_score'],
-                coastal_score_raw=scores['coastal_score'],
-                total_score_raw=scores['total_score'],
+                fluvial_score_raw=scores["fluvial_score"],
+                coastal_score_raw=scores["coastal_score"],
+                total_score_raw=scores["total_score"],
                 fluvial_index=100.0,
                 coastal_index=100.0,
                 composite_fwii=100.0,
-                fluvial_hours=scores['fluvial_hours'],
-                coastal_hours=scores['coastal_hours'],
-                fluvial_events=scores['fluvial_events'],
-                coastal_events=scores['coastal_events'],
-                total_events=scores['total_events'],
-                severe_warnings=scores['by_severity']['total'][1]['count'],
-                flood_warnings=scores['by_severity']['total'][2]['count'],
-                flood_alerts=scores['by_severity']['total'][3]['count'],
+                fluvial_hours=scores["fluvial_hours"],
+                coastal_hours=scores["coastal_hours"],
+                fluvial_events=scores["fluvial_events"],
+                coastal_events=scores["coastal_events"],
+                total_events=scores["total_events"],
+                severe_warnings=scores["by_severity"]["total"][1]["count"],
+                flood_warnings=scores["by_severity"]["total"][2]["count"],
+                flood_alerts=scores["by_severity"]["total"][3]["count"],
             )
 
         # Normalize against baseline
@@ -217,36 +218,35 @@ class IndicatorCalculator:
             )
 
         fluvial_index = (
-            (scores['fluvial_score'] / self.baseline.fluvial_score) * 100.0
+            (scores["fluvial_score"] / self.baseline.fluvial_score) * 100.0
             if self.baseline.fluvial_score > 0
             else 0.0
         )
 
         coastal_index = (
-            (scores['coastal_score'] / self.baseline.coastal_score) * 100.0
+            (scores["coastal_score"] / self.baseline.coastal_score) * 100.0
             if self.baseline.coastal_score > 0
             else 0.0
         )
 
         composite_fwii = (
-            fluvial_index * self.fluvial_weight +
-            coastal_index * self.coastal_weight
+            fluvial_index * self.fluvial_weight + coastal_index * self.coastal_weight
         )
 
         return NormalizedIndicators(
             year=year,
-            fluvial_score_raw=scores['fluvial_score'],
-            coastal_score_raw=scores['coastal_score'],
-            total_score_raw=scores['total_score'],
+            fluvial_score_raw=scores["fluvial_score"],
+            coastal_score_raw=scores["coastal_score"],
+            total_score_raw=scores["total_score"],
             fluvial_index=fluvial_index,
             coastal_index=coastal_index,
             composite_fwii=composite_fwii,
-            fluvial_hours=scores['fluvial_hours'],
-            coastal_hours=scores['coastal_hours'],
-            fluvial_events=scores['fluvial_events'],
-            coastal_events=scores['coastal_events'],
-            total_events=scores['total_events'],
-            severe_warnings=scores['by_severity']['total'][1]['count'],
-            flood_warnings=scores['by_severity']['total'][2]['count'],
-            flood_alerts=scores['by_severity']['total'][3]['count'],
+            fluvial_hours=scores["fluvial_hours"],
+            coastal_hours=scores["coastal_hours"],
+            fluvial_events=scores["fluvial_events"],
+            coastal_events=scores["coastal_events"],
+            total_events=scores["total_events"],
+            severe_warnings=scores["by_severity"]["total"][1]["count"],
+            flood_warnings=scores["by_severity"]["total"][2]["count"],
+            flood_alerts=scores["by_severity"]["total"][3]["count"],
         )

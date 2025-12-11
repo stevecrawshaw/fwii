@@ -293,7 +293,12 @@ class HistoricWarningsLoader:
         for col in timestamp_columns:
             if col in df.columns:
                 # Check if already datetime type
-                if df[col].dtype in [pl.Datetime, pl.Datetime("ms"), pl.Datetime("us"), pl.Datetime("ns")]:
+                if df[col].dtype in [
+                    pl.Datetime,
+                    pl.Datetime("ms"),
+                    pl.Datetime("us"),
+                    pl.Datetime("ns"),
+                ]:
                     logger.debug(f"{col} already in datetime format")
                     continue
 
@@ -307,9 +312,7 @@ class HistoricWarningsLoader:
                 # Count and log missing timestamps
                 null_count = df.filter(pl.col(col).is_null()).height
                 if null_count > 0:
-                    logger.warning(
-                        f"{null_count} records have missing/invalid {col}"
-                    )
+                    logger.warning(f"{null_count} records have missing/invalid {col}")
 
         return df
 
@@ -378,9 +381,7 @@ class HistoricWarningsLoader:
         # Combine all DataFrames
         combined_df = pl.concat(dfs, how="vertical")
 
-        logger.info(
-            f"Combined {len(dfs)} files into {len(combined_df)} total records"
-        )
+        logger.info(f"Combined {len(dfs)} files into {len(combined_df)} total records")
 
         return combined_df
 
@@ -439,9 +440,7 @@ class HistoricWarningsLoader:
         # Add tidal/fluvial breakdown if available
         if "isTidal" in df.columns:
             summary["tidal_distribution"] = (
-                df.group_by("isTidal")
-                .agg(pl.len().alias("count"))
-                .to_dicts()
+                df.group_by("isTidal").agg(pl.len().alias("count")).to_dicts()
             )
 
         return summary

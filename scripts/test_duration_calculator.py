@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import duckdb
 import polars as pl
@@ -19,13 +19,13 @@ from fwii.duration_calculator import DurationCalculator, DurationConfig
 
 def main():
     # Try to load from CSV export first (avoids database lock issues)
-    csv_path = Path(__file__).parent.parent / 'data' / 'processed' / 'warnings_2020.csv'
+    csv_path = Path(__file__).parent.parent / "data" / "processed" / "warnings_2020.csv"
 
     if csv_path.exists():
         print(f"Loading data from CSV export: {csv_path}")
         df = pl.read_csv(csv_path, try_parse_dates=True)
     else:
-        db_path = Path(__file__).parent.parent / 'data' / 'processed' / 'fwii.duckdb'
+        db_path = Path(__file__).parent.parent / "data" / "processed" / "fwii.duckdb"
         if not db_path.exists():
             print(f"Error: Database not found at {db_path}")
             print("Run: uv run python scripts/download_historic_data.py 2020")
@@ -49,24 +49,23 @@ def main():
     print()
 
     # Load warning areas to get isTidal information
-    config_path = Path(__file__).parent.parent / 'config' / 'warning_areas.yaml'
-    with open(config_path, 'r') as f:
+    config_path = Path(__file__).parent.parent / "config" / "warning_areas.yaml"
+    with open(config_path) as f:
         areas_config = yaml.safe_load(f)
 
     # Create lookup DataFrame for isTidal
     areas_list = []
-    for area in areas_config['warning_areas']:
-        areas_list.append({
-            'fwdCode': area['fwdCode'],
-            'isTidal': area.get('isTidal', None)
-        })
+    for area in areas_config["warning_areas"]:
+        areas_list.append(
+            {"fwdCode": area["fwdCode"], "isTidal": area.get("isTidal", None)}
+        )
 
     areas_df = pl.DataFrame(areas_list)
 
     # Join to add isTidal information
-    df = df.drop('isTidal').join(areas_df, on='fwdCode', how='left')
+    df = df.drop("isTidal").join(areas_df, on="fwdCode", how="left")
 
-    print(f"Joined with warning areas configuration")
+    print("Joined with warning areas configuration")
     print(f"  Fluvial (isTidal=false): {df.filter(pl.col('isTidal') == False).height}")
     print(f"  Coastal (isTidal=true): {df.filter(pl.col('isTidal') == True).height}")
     print(f"  Unknown: {df.filter(pl.col('isTidal').is_null()).height}")
@@ -87,9 +86,11 @@ def main():
     print("Sample warning events:")
     print("-" * 100)
     for event in events[:10]:
-        print(f"{event.fwdCode:15s} {event.timeRaised} "
-              f"Level {event.severityLevel} {'(UPDATE)' if event.is_update else '':<10s} "
-              f"Duration: {event.duration_hours:6.2f}h")
+        print(
+            f"{event.fwdCode:15s} {event.timeRaised} "
+            f"Level {event.severityLevel} {'(UPDATE)' if event.is_update else '':<10s} "
+            f"Duration: {event.duration_hours:6.2f}h"
+        )
     print()
 
     # Calculate annual scores
@@ -105,12 +106,14 @@ def main():
     print(f"  Coastal: {scores['coastal_events']}")
     print(f"  Other: {scores['other_events']}")
     print()
-    print(f"Total Warning Hours (unweighted): {scores['fluvial_hours'] + scores['coastal_hours']:.1f}")
+    print(
+        f"Total Warning Hours (unweighted): {scores['fluvial_hours'] + scores['coastal_hours']:.1f}"
+    )
     print(f"  Fluvial: {scores['fluvial_hours']:.1f} hours")
     print(f"  Coastal: {scores['coastal_hours']:.1f} hours")
     print(f"  Other: {scores['other_hours']:.1f} hours")
     print()
-    print(f"Weighted Scores:")
+    print("Weighted Scores:")
     print(f"  Fluvial Score: {scores['fluvial_score']:.1f}")
     print(f"  Coastal Score: {scores['coastal_score']:.1f}")
     print(f"  Other Score: {scores['other_score']:.1f}")
@@ -121,38 +124,44 @@ def main():
     print("Breakdown by Severity (Total):")
     print("-" * 100)
     for level in [1, 2, 3]:
-        level_name = {1: 'Severe', 2: 'Warning', 3: 'Alert'}[level]
-        data = scores['by_severity']['total'][level]
-        print(f"  Level {level} ({level_name}): "
-              f"{data['count']} events, "
-              f"{data['total_hours']:.1f} hours, "
-              f"weighted score: {data['weighted_score']:.1f}")
+        level_name = {1: "Severe", 2: "Warning", 3: "Alert"}[level]
+        data = scores["by_severity"]["total"][level]
+        print(
+            f"  Level {level} ({level_name}): "
+            f"{data['count']} events, "
+            f"{data['total_hours']:.1f} hours, "
+            f"weighted score: {data['weighted_score']:.1f}"
+        )
     print()
 
     # Show fluvial breakdown
     print("Fluvial Breakdown by Severity:")
     print("-" * 100)
     for level in [1, 2, 3]:
-        level_name = {1: 'Severe', 2: 'Warning', 3: 'Alert'}[level]
-        data = scores['by_severity']['fluvial'][level]
-        if data['count'] > 0:
-            print(f"  Level {level} ({level_name}): "
-                  f"{data['count']} events, "
-                  f"{data['total_hours']:.1f} hours, "
-                  f"weighted score: {data['weighted_score']:.1f}")
+        level_name = {1: "Severe", 2: "Warning", 3: "Alert"}[level]
+        data = scores["by_severity"]["fluvial"][level]
+        if data["count"] > 0:
+            print(
+                f"  Level {level} ({level_name}): "
+                f"{data['count']} events, "
+                f"{data['total_hours']:.1f} hours, "
+                f"weighted score: {data['weighted_score']:.1f}"
+            )
     print()
 
     # Show coastal breakdown
     print("Coastal Breakdown by Severity:")
     print("-" * 100)
     for level in [1, 2, 3]:
-        level_name = {1: 'Severe', 2: 'Warning', 3: 'Alert'}[level]
-        data = scores['by_severity']['coastal'][level]
-        if data['count'] > 0:
-            print(f"  Level {level} ({level_name}): "
-                  f"{data['count']} events, "
-                  f"{data['total_hours']:.1f} hours, "
-                  f"weighted score: {data['weighted_score']:.1f}")
+        level_name = {1: "Severe", 2: "Warning", 3: "Alert"}[level]
+        data = scores["by_severity"]["coastal"][level]
+        if data["count"] > 0:
+            print(
+                f"  Level {level} ({level_name}): "
+                f"{data['count']} events, "
+                f"{data['total_hours']:.1f} hours, "
+                f"weighted score: {data['weighted_score']:.1f}"
+            )
     print()
 
     print("=" * 100)
@@ -162,5 +171,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

@@ -2,8 +2,9 @@
 
 import sys
 from pathlib import Path
-import yaml
+
 import polars as pl
+import yaml
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -52,15 +53,17 @@ def main():
         fluvial_count = len(df.filter(pl.col("isTidal") == False))
         coastal_count = len(df.filter(pl.col("isTidal") == True))
 
-        results.append({
-            "year": year,
-            "total_warnings": len(df),
-            "fluvial_warnings": fluvial_count,
-            "coastal_warnings": coastal_count,
-            "fluvial_index": round(indicators.fluvial_index, 1),
-            "coastal_index": round(indicators.coastal_index, 1),
-            "composite_fwii": round(indicators.composite_fwii, 1),
-        })
+        results.append(
+            {
+                "year": year,
+                "total_warnings": len(df),
+                "fluvial_warnings": fluvial_count,
+                "coastal_warnings": coastal_count,
+                "fluvial_index": round(indicators.fluvial_index, 1),
+                "coastal_index": round(indicators.coastal_index, 1),
+                "composite_fwii": round(indicators.composite_fwii, 1),
+            }
+        )
 
     # Create summary table
     summary_df = pl.DataFrame(results)
@@ -78,13 +81,15 @@ def main():
     # Year-on-year changes
     print("Year-on-Year Changes in Composite FWII:")
     for i in range(1, len(results)):
-        prev = results[i-1]
+        prev = results[i - 1]
         curr = results[i]
         change = curr["composite_fwii"] - prev["composite_fwii"]
         pct_change = ((curr["composite_fwii"] / prev["composite_fwii"]) - 1) * 100
 
         arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
-        print(f"  {prev['year']} → {curr['year']}: {arrow} {abs(change):5.1f} points ({pct_change:+6.1f}%)")
+        print(
+            f"  {prev['year']} → {curr['year']}: {arrow} {abs(change):5.1f} points ({pct_change:+6.1f}%)"
+        )
 
     print()
 
@@ -96,7 +101,9 @@ def main():
     overall_pct = ((latest / baseline) - 1) * 100
 
     arrow = "↑" if overall_change > 0 else "↓" if overall_change < 0 else "→"
-    print(f"  {arrow} {abs(overall_change):5.1f} points ({overall_pct:+6.1f}%) from baseline")
+    print(
+        f"  {arrow} {abs(overall_change):5.1f} points ({overall_pct:+6.1f}%) from baseline"
+    )
     print()
 
     # Component analysis
@@ -126,8 +133,12 @@ def main():
     min_year = min(results, key=lambda x: x["composite_fwii"])
     max_year = max(results, key=lambda x: x["composite_fwii"])
 
-    print(f"• Lowest Activity: {min_year['year']} (FWII = {min_year['composite_fwii']})")
-    print(f"• Highest Activity: {max_year['year']} (FWII = {max_year['composite_fwii']})")
+    print(
+        f"• Lowest Activity: {min_year['year']} (FWII = {min_year['composite_fwii']})"
+    )
+    print(
+        f"• Highest Activity: {max_year['year']} (FWII = {max_year['composite_fwii']})"
+    )
     print()
 
     # Fluvial vs Coastal trends
@@ -135,14 +146,22 @@ def main():
     coastal_trend = results[-1]["coastal_index"] - results[0]["coastal_index"]
 
     if fluvial_trend > 0:
-        print(f"• Fluvial flooding warnings have INCREASED by {fluvial_trend:.1f} points (+{fluvial_trend:.0f}%)")
+        print(
+            f"• Fluvial flooding warnings have INCREASED by {fluvial_trend:.1f} points (+{fluvial_trend:.0f}%)"
+        )
     else:
-        print(f"• Fluvial flooding warnings have DECREASED by {abs(fluvial_trend):.1f} points ({fluvial_trend:.0f}%)")
+        print(
+            f"• Fluvial flooding warnings have DECREASED by {abs(fluvial_trend):.1f} points ({fluvial_trend:.0f}%)"
+        )
 
     if coastal_trend > 0:
-        print(f"• Coastal flooding warnings have INCREASED by {coastal_trend:.1f} points (+{coastal_trend:.0f}%)")
+        print(
+            f"• Coastal flooding warnings have INCREASED by {coastal_trend:.1f} points (+{coastal_trend:.0f}%)"
+        )
     else:
-        print(f"• Coastal flooding warnings have DECREASED by {abs(coastal_trend):.1f} points ({coastal_trend:.0f}%)")
+        print(
+            f"• Coastal flooding warnings have DECREASED by {abs(coastal_trend):.1f} points ({coastal_trend:.0f}%)"
+        )
 
     print()
 
@@ -155,7 +174,9 @@ def main():
     print()
 
     # Export CSV
-    output_path = Path(__file__).parent.parent / "data" / "outputs" / "fwii_timeseries.csv"
+    output_path = (
+        Path(__file__).parent.parent / "data" / "outputs" / "fwii_timeseries.csv"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     summary_df.write_csv(output_path)

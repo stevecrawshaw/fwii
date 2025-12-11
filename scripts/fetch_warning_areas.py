@@ -1,21 +1,21 @@
 """Fetch flood warning areas for West of England and save to config."""
 
-import sys
-from pathlib import Path
-from datetime import datetime, timezone
-import yaml
 import logging
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+import yaml
 
 # Add src to path so we can import fwii
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from fwii.config import Config
 from fwii.api_client import FloodMonitoringClient
+from fwii.config import Config
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def main():
         stats = {
             "fluvial": 0,
             "coastal": 0,
-            "by_county": {county: 0 for county in config.counties}
+            "by_county": {county: 0 for county in config.counties},
         }
 
         for area in areas:
@@ -46,9 +46,16 @@ def main():
             river_or_sea = area.get("riverOrSea", "")
 
             # Detect coastal/tidal areas
-            is_tidal = any(keyword in river_or_sea.lower() for keyword in [
-                "severn estuary", "sea", "tidal", "coast", "bristol channel"
-            ])
+            is_tidal = any(
+                keyword in river_or_sea.lower()
+                for keyword in [
+                    "severn estuary",
+                    "sea",
+                    "tidal",
+                    "coast",
+                    "bristol channel",
+                ]
+            )
 
             area_data = {
                 "fwdCode": area.get("notation"),
@@ -56,7 +63,7 @@ def main():
                 "description": area.get("description", ""),
                 "county": area.get("county"),
                 "riverOrSea": river_or_sea,
-                "isTidal": is_tidal
+                "isTidal": is_tidal,
             }
 
             warning_areas.append(area_data)
@@ -70,7 +77,9 @@ def main():
             # Count by county (handle multi-county areas)
             county_str = area.get("county", "")
             for county in config.counties:
-                if county in county_str or (county == "Bristol" and "City of Bristol" in county_str):
+                if county in county_str or (
+                    county == "Bristol" and "City of Bristol" in county_str
+                ):
                     stats["by_county"][county] += 1
 
         # Sort by fwdCode for consistency
@@ -82,13 +91,13 @@ def main():
                 "description": "Flood warning areas for West of England",
                 "region": config.region_name,
                 "counties": config.counties,
-                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(UTC).isoformat(),
                 "total_areas": len(warning_areas),
                 "fluvial_areas": stats["fluvial"],
                 "coastal_areas": stats["coastal"],
-                "areas_by_county": stats["by_county"]
+                "areas_by_county": stats["by_county"],
             },
-            "warning_areas": warning_areas
+            "warning_areas": warning_areas,
         }
 
         # Save to YAML

@@ -151,7 +151,9 @@ def process_single_year(
 
         logger.info(f"[OK] Loaded {len(df):,} records")
         logger.info(f"  Unique warning areas: {summary['unique_warning_areas']}")
-        logger.info(f"  Date range: {summary['date_range']['earliest']} to {summary['date_range']['latest']}")
+        logger.info(
+            f"  Date range: {summary['date_range']['earliest']} to {summary['date_range']['latest']}"
+        )
 
     except Exception as e:
         logger.error(f"[ERROR] Load failed: {e}")
@@ -263,7 +265,7 @@ def process_multiple_years(
 
     # Download the complete dataset once
     logger.info(f"\n{'=' * 80}")
-    logger.info(f"DOWNLOADING COMPLETE DATASET (2006-PRESENT)")
+    logger.info("DOWNLOADING COMPLETE DATASET (2006-PRESENT)")
     logger.info(f"{'=' * 80}\n")
 
     config = Config()
@@ -288,7 +290,9 @@ def process_multiple_years(
 
     # Process each year using the downloaded data
     for year in range(start_year, end_year + 1):
-        logger.info(f"\n\nProcessing year {year} ({year - start_year + 1}/{total_years})\n")
+        logger.info(
+            f"\n\nProcessing year {year} ({year - start_year + 1}/{total_years})\n"
+        )
 
         result = process_single_year(
             year=year,
@@ -313,14 +317,12 @@ def process_multiple_years(
     }
 
     # Save combined results
-    results_path = Path(
-        f"data/processed/pipeline_results_{start_year}_{end_year}.json"
-    )
+    results_path = Path(f"data/processed/pipeline_results_{start_year}_{end_year}.json")
     with open(results_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)
 
     logger.info(f"\n{'=' * 80}")
-    logger.info(f"PIPELINE COMPLETE")
+    logger.info("PIPELINE COMPLETE")
     logger.info(f"{'=' * 80}")
     logger.info(f"Successful: {successful}/{total_years}")
     logger.info(f"Failed: {failed}/{total_years}")

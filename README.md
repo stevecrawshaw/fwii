@@ -1,91 +1,111 @@
-# vs-code-setup
-Setup for VS code projects like [Arjan Codes](https://youtu.be/PwGKhvqJCQM?si=iykasikAMq893Uf-)
+# West of England Flood Warning Intensity Index (FWII)
 
-This is for a VS Code project template that includes a virtual environment  (.venv), default python packages, and some recommended extensions. The template is for Python projects with a focus on data analysis, but can be adapted for other languages.
+Regional flood warning indicator for the West of England, tracking flood warning activity across Bristol, Bath & North East Somerset, South Gloucestershire, and North Somerset.
 
-The .gitignore file is set up to ignore the virtual environment and other common files that should not be committed to the repository. It also includes common R files and folders which should not be pushed to public repos.
+## Overview
 
-## How to use:
+The FWII is a duration-weighted composite indicator that tracks flood warning activity as a proxy for flooding events in the West of England region. It provides annual reporting to support climate resilience monitoring.
 
-Make sure you're logged in to your github account.
+### Indicator Components
 
-Click "Use this template" - Create a new repository.
+1. **Fluvial Flood Intensity Sub-indicator** - River flood warnings (55% weight)
+2. **Coastal Flood Intensity Sub-indicator** - Tidal/coastal flood warnings (45% weight)
+3. **Composite FWII** - Combined indicator normalized to 2020 baseline = 100
+4. **Surface Water Flooding** - Reported as "not measurable" with caveats
 
-Give the repo a name and description.
-Create the repository - it will be a new repository on your github account.
+## Quick Start
 
-## Clone the repository
-Here you are essentially copying the repo you created from the template onto your local machine, and referencing it as a git repo that is linked to the GitHub repo.
+### Installation
 
-**It's best to avoid putting this on your OneDrive as I have found that sometimes VS Code can't properly access the .venv, possibly due to OneDrive's syncing, or long path names.** Because you are creating a github repo, this will always be backed up, so you don't need OneDrive for that.
+```bash
+# Clone the repository
+git clone <repository-url>
+cd fwii
 
-copy the URL of the repo from the Code button.
+# Install dependencies (requires Python 3.13+)
+uv sync
+```
 
-![](plots/git-clone.png)
+### Fetch Flood Warning Areas
 
- then go your top level folder where you will do your analysis project in the **terminal** e.g. 
- `C:\Users\steve.crawshaw\projects`
+```bash
+# Download current flood warning areas from Environment Agency API
+uv run scripts/fetch_warning_areas.py
+```
 
-and type 
+This fetches **18 flood warning and alert areas** covering the West of England:
+- 7 Flood Warning areas (immediate action required)
+- 11 Flood Alert areas (early notification)
+- 9 fluvial (river) areas
+- 9 coastal/tidal areas
 
-`git clone <hit CTRL+V to paste the URL>`
-
-## Install uv
-(if you've already installed uv you can skip this step)<br>
-UV is a helpful tool for managing virtual environments and packages. It can be installed by running this line from powershell:
-
-`powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
-
-## Install packages with uv
-
-We're going to use the [project - based approach](https://docs.astral.sh/uv/guides/projects/#running-commands) to virtual environments, which means that the .venv folder will be created in the project folder. UV uses the pyproject.toml file to track packages, and creates a lock file (uv.lock) to ensure that the exact versions of packages are recorded.
-
-It's good practice (but not essential) to set the name of the virtual environment folder to .venv as this is automatically ignored by git, and is a common convention. UV will do this for you. You need to set windows explorer to show hidden files to see the .venv folder. Don't edit the .venv folder directly.
-
-When the .venv is active in the terminal, you will see its name in brackets at the start of the terminal prompt, e.g. `(.venv) C:\Users\steve.crawshaw\projects\myproject>`. It's a good idea to set this name by changing the name of the project in pyproject.toml.
-
-In the root of your project folder you can type `code pyproject.toml` and manually change the name and description values. Alternatively there is a helper Powershell script you can run from the powershell terminal like this:
-
-`.\update-project.ps1 -Name "my-awesome-project" -Description "This is my awesome project"`
-
-Then when the .venv is active you should see:
-
-`(my-awesome-project) C:\Users\steve.crawshaw\projects\myproject`
-
-Which tells you that the .venv is active, and which project it is for.
-
-Make sure you're in the project folder in the terminal, and with one command you can create the default .venv and install the packages listed in the pyproject.toml file by typing:
-
-`uv sync`
-
-You should see a lot of packages being installed quite quickly.
-
-You can add new packages with `uv add <package>`, e.g. `uv add pandas`. You might need to do this as you develop code, and you get a message saying that a package is missing.
-
-UV looks at the pyproject.toml file to see what packages are listed there, and installs them into the .venv. It also updates the lock file (uv.lock) to ensure that the exact versions of packages are recorded. If your venv becomes corrupted you can simply delete it and use `uv sync` to recreate it. If you get a cryptic message about hardlink failures, you may need to delete the uv.lock file and then run `uv sync` again. If you get a message about cache you can do `uv cache clean`.
-
-Don't forget that **if you are running tools from the command line which are installed in the .venv** you need to activate the virtual environment first, e.g. on Windows Powershell:
+## Project Structure
 
 ```
-.\.venv\Scripts\activate
+fwii/
+   config/
+      settings.yaml           # Configuration parameters
+      warning_areas.yaml      # West of England flood areas
+   src/fwii/
+      __init__.py
+      config.py              # Configuration management
+      api_client.py          # EA API client
+   scripts/
+      fetch_warning_areas.py # Fetch flood areas script
+   data/
+      raw/                   # Downloaded historic warnings
+      processed/             # Cleaned data
+      outputs/               # Generated indicators
+   notebooks/                 # Exploration and analysis
 ```
-on Windows Git bash:
-```
-source .venv/Scripts/activate
-```
-on Linux or Mac:
-```
-source .venv/bin/activate
-```
-## Selecting the Python interpreter in VS Code
 
-Once the .venv is created, you need to tell VS Code to use the Python interpreter from the .venv. You can do this by opening the command palette (Ctrl+Shift+P) and typing "Python: Select Interpreter". You should see an option that includes ".venv". If you renamed the project in the pyproject.toml file it will be called like (my-project-name) rather than (.venv). Select this option.
+## Data Sources
 
-You should now be in a position to run Python code in VS Code using the packages installed in the .venv.
+- **Environment Agency Flood Monitoring API**: Real-time and area data
+- **Historic Flood Warnings Dataset**: Complete warning history from 2006 onwards
+- **Update frequency**: Quarterly
 
-You can create a new python file by typing `code new-file.py` from your project folder and start writing code. If you use code fences like `# %%' you will get an [interactive notebook experience](https://code.visualstudio.com/docs/python/jupyter-support-py) where you can run a chunk at a time with CTRL+ENTER or SHIFT+ENTER or run the whole script.
+All data is available under the Open Government Licence v3.0.
 
-## Extensions
-Some recommended extensions are included in .vscode/extensions.json.
+## Methodology
 
-Open the command palette (Ctrl+Shift+P) and type "Extensions: Install Extensions". Click the Funnel in the search extension bar and select "Recommended". This will show the extensions listed in .vscode/extensions.json. Click "Install All" to install them.
+See [CLAUDE.md](CLAUDE.md) for detailed specification including:
+- Calculation methodology
+- Duration weighting and severity scoring
+- Baseline normalization approach
+- Data quality requirements
+
+## Development Status
+
+**Current Progress**: 12% complete (4/34 tasks)
+
+**Phase 1: Foundation & Setup** ✅ COMPLETE
+- ✅ Project structure created
+- ✅ Configuration management implemented
+- ✅ EA API client built
+- ✅ 18 flood warning areas fetched
+
+**Phase 2: Data Acquisition** 🏗️ NEXT
+- Download historic warnings (2020-present)
+- Data validation and quality checks
+- DuckDB storage setup
+
+See [TODO.md](TODO.md) for detailed implementation plan and progress tracking.
+
+## Caveats
+
+This indicator measures **flood warning activity**, not actual flooding. It does NOT include:
+- Surface water flooding (affects more properties than river/coastal combined)
+- Flooding that occurred without warnings
+- Unreported events
+
+See [CLAUDE.md](CLAUDE.md) for full caveats and interpretation guidance.
+
+## Contact
+
+Environment Agency: enquiries@environment-agency.gov.uk
+
+## License
+
+Code: MIT License (see [LICENSE](LICENSE))
+Data: [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)

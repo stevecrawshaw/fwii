@@ -11,6 +11,8 @@ dependencies = [
     "httpx>=0.27.0",
     "pyyaml",
     "pyarrow",
+    "odfpy>=1.4.1",
+    "pandas>=2.3.3",
 ]
 
 [dependency-groups]

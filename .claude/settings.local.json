@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python scripts/fetch_warning_areas.py:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__list_dir",
+      "mcp__serena__activate_project",
+      "mcp__serena__get_symbols_overview",
+      "Bash(cat:*)",
+      "mcp__serena__find_symbol",
+      "WebSearch",
+      "WebFetch(domain:environment.data.gov.uk)",
+      "WebFetch(domain:www.data.gov.uk)",
+      "mcp__serena__insert_after_symbol",
+      "Bash(xargs sed:*)",
+      "Bash(uv add:*)",
+      "Bash(python:*)",
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__write_memory"
+    ]
+  }
+}

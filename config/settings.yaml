@@ -1,0 +1,73 @@
+# FWII Configuration Settings
+
+# Environment Agency API Endpoints
+api:
+  flood_monitoring_base_url: "https://environment.data.gov.uk/flood-monitoring"
+  flood_areas_endpoint: "/id/floodAreas"
+  floods_endpoint: "/id/floods"
+  stations_endpoint: "/id/stations"
+
+  # Historic flood warnings dataset
+  historic_warnings_dataset_url: "https://environment.data.gov.uk/dataset/88bed270-d465-11e4-8669-f0def148f590"
+
+  # Request settings
+  rate_limit_delay: 1.0  # seconds between requests
+  timeout: 30  # seconds
+  max_retries: 3
+  retry_delay: 5  # seconds
+
+# West of England Geography
+geography:
+  counties:
+    - "Bristol"
+    - "Bath and North East Somerset"
+    - "South Gloucestershire"
+    - "North Somerset"
+
+  region_name: "West of England"
+  wessex_region_code: "112"  # Flood warning area prefix
+
+# Indicator Calculation Parameters
+indicator:
+  baseline_year: 2020
+
+  # Severity weights for duration-weighted scoring
+  severity_weights:
+    1: 3  # Severe Flood Warning
+    2: 2  # Flood Warning
+    3: 1  # Flood Alert
+    4: 0  # Warning No Longer in Force
+
+  # Composite indicator weights
+  composite_weights:
+    fluvial: 0.55
+    coastal: 0.45
+
+  # Data quality thresholds
+  quality:
+    min_year: 2020
+    max_expected_annual_warnings: 1000
+    max_warning_duration_days: 14
+
+# Output Settings
+output:
+  formats:
+    - json
+    - csv
+
+  precision: 2  # decimal places for normalized scores
+
+  # Surface water caveat text
+  surface_water_caveat: |
+    Surface water flooding is not included in this indicator. The Environment Agency
+    does not operate a surface water flood warning system due to the sporadic and
+    unpredictable nature of surface water flooding from intense rainfall. Surface water
+    flooding affects more properties nationally (3.4 million) than river and coastal
+    flooding combined (2.7 million). Where available, Section 19 flood investigation
+    reports from Lead Local Flood Authorities provide local records of significant
+    surface water flooding events.
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

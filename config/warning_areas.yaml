@@ -1,0 +1,148 @@
+metadata:
+  description: Flood warning areas for West of England
+  region: West of England
+  counties:
+  - Bristol
+  - Bath and North East Somerset
+  - South Gloucestershire
+  - North Somerset
+  fetched_at: '2025-12-11T15:23:17.464178+00:00'
+  total_areas: 18
+  fluvial_areas: 9
+  coastal_areas: 9
+  areas_by_county:
+    Bristol: 5
+    Bath and North East Somerset: 5
+    South Gloucestershire: 6
+    North Somerset: 8
+warning_areas:
+- fwdCode: 112FWFBFR20C
+  label: Bristol Frome from Stapleton to Bristol Floating Harbour, other properties
+    set back from the river
+  description: Eastville including Averay Road, Glenfrome Road and Muller Road. Baptist
+    Mills including Mina Road, Rosebery Avenue, Jubilee Road, Ashley Street, Badminton
+    Road, Franklyn Street, Thomas Street, Hathway Walk, Wade Street and River Street
+  county: City of Bristol
+  riverOrSea: Bristol Frome
+  isTidal: false
+- fwdCode: 112FWFBRI10C
+  label: Brislington Brook, other properties set back from the river
+  description: Sturminster Road, West Town Grove, Beechmount Grove, Hengrove Avenue,
+    Bears Bridge, Wootton Park, West Town Lane Primary School, Callington Road, Jean
+    Road, Edna Avenue and Eldonwall Trading Estate
+  county: City of Bristol
+  riverOrSea: Brislington Brook
+  isTidal: false
+- fwdCode: 112FWFWEL11A
+  label: Wellow Brook and River Somer at Midsomer Norton and Radstock, Thicketmead
+    Bridge and Coombend areas
+  description: Wellow Brook including Thicketmead Bridge in Midsomer Norton and Mill
+    Road in Radstock. Coomb End Culvert including Coombend and Market Place. The Snails
+    and Kilmersdon Brooks including Church Street and St Nicholas Primary School and
+    the River Somer
+  county: Bath and North East Somerset, Somerset
+  riverOrSea: Wellow Brook, River Somer
+  isTidal: false
+- fwdCode: 112FWTCLE02
+  label: Somerset coast at Clevedon, properties located behind Marshalls Field
+  description: Marshalls Field area to Fosseway and Churchill Avenue to the east to
+    Old Church Road to the north including Strode Road and Tweed Road Industrial Estate
+  county: North Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112FWTKEW02
+  label: Somerset coast at Kewstoke and Sand Bay, Beach Road area
+  description: Coastline between Kewstoke and Sand Point including properties and
+    Caravan Sites along Beach Road, Crookes Lane, Southside Crescent and Sand Road
+  county: North Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112FWTKIN01
+  label: Somerset coast at Kingston Seymour, seafront properties
+  description: Coastline between Sand Point and Gullhouse Point including Ham Lane,
+    Back Lane, Yeo Back Lane and Icelton
+  county: North Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112FWTSEV03
+  label: Severn Estuary at Severn Beach and Pilning
+  description: Redwick and Pilning to the north to Easter Compton to the east including
+    Avonmouth and Western Approach Distribution Centres, Swanmoor Bridge area, Avlon
+    and Severnside Works and the Severn View Industrial Park
+  county: South Gloucestershire
+  riverOrSea: Severn Estuary
+  isTidal: true
+- fwdCode: 112WAFTBFC
+  label: Bristol Frome catchment
+  description: Bristol Frome, Ladden Brook, River Trym and tributaries between Chipping
+    Sodbury and Tytherington to Bristol Floating Harbour and the Bristol Avon
+  county: City of Bristol, South Gloucestershire
+  riverOrSea: Bristol Frome
+  isTidal: false
+- fwdCode: 112WAFTLBA
+  label: Lower Bristol Avon area
+  description: Lower River Avon, River Boyd, By and Brislington Brooks and tributaries
+  county: Bath and North East Somerset, City of Bristol, North Somerset, South Gloucestershire,
+    Wiltshire
+  riverOrSea: Bristol River Avon, River Boyd, By Brook, Brislington Brook
+  isTidal: false
+- fwdCode: 112WAFTMBC
+  label: Midford Brook catchment
+  description: River Cam, Wellow and Midford Brooks and tributaries
+  county: Bath and North East Somerset, Somerset, Wiltshire
+  riverOrSea: River Cam, Wellow Brook, Midford Brook
+  isTidal: false
+- fwdCode: 112WAFTNSA
+  label: North Somerset area
+  description: Rivers in North Somerset including Congresbury Yeo, Cheddar Yeo, Axe
+    and tributaries
+  county: Bath and North East Somerset, North Somerset, Somerset
+  riverOrSea: Congresbury Yeo, Cheddar Yeo, River Axe, River Banwell
+  isTidal: false
+- fwdCode: 112WAFTSFA
+  label: Somerset Frome area
+  description: River Frome and Mells, and the Whatley and Nunney Brooks and tributaries
+  county: Bath and North East Somerset, Somerset, Wiltshire
+  riverOrSea: Somerset Frome, River Mells, Whatley Brook, Nunney Brook
+  isTidal: false
+- fwdCode: 112WAFTUBA
+  label: Upper Bristol Avon area
+  description: Upper River Avon and tributaries including Malmesbury, Dauntsey, Chippenham
+    and Calne
+  county: Gloucestershire, South Gloucestershire, Wiltshire
+  riverOrSea: Bristol River Avon
+  isTidal: false
+- fwdCode: 112WATSOM2
+  label: Somerset coast at Dunster Beaches, Blue Anchor, Steart, Stolford and Brean
+  description: Coastal areas at Dunster Beaches, Blue Anchor, Steart, Stolford and
+    Brean
+  county: North Somerset, Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112WATSOM3
+  label: Somerset coast at Minehead, Bridgwater, Burnham-on-Sea and Uphill to Kingston
+    Seymour
+  description: Coastal and tidal areas at Minehead, Combwich, Bridgwater, Burnham-on-Sea,
+    Uphill, Weston-super-Mare, Kewstoke, Sand Bay and Kingston Seymour
+  county: North Somerset, Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112WATSOM4
+  label: Somerset coast at Clevedon
+  description: Coastline between Gullhouse Point and Marine Parade
+  county: North Somerset
+  riverOrSea: Bristol Channel
+  isTidal: true
+- fwdCode: 112WATSVN1
+  label: Severn Estuary at Severn Beach
+  description: Severn Estuary at Severn Beach including New Passage and Pilning
+  county: South Gloucestershire
+  riverOrSea: Severn Estuary
+  isTidal: true
+- fwdCode: 112WATSVN2
+  label: Severn Estuary at Oldbury-on-Severn, Northwick and Avonmouth
+  description: Severn Estuary at Oldbury-on-Severn, Northwick and Avonmouth including
+    Aust and Old Passage
+  county: City of Bristol, Gloucestershire, South Gloucestershire
+  riverOrSea: Severn Estuary
+  isTidal: true

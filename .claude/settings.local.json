@@ -19,7 +19,12 @@
       "Bash(uv add:*)",
       "Bash(python:*)",
       "mcp__serena__replace_symbol_body",
-      "mcp__serena__write_memory"
+      "mcp__serena__write_memory",
+      "mcp__serena__read_memory",
+      "mcp__duckdb__query",
+      "mcp__context7__resolve-library-id",
+      "mcp__serena__list_memories",
+      "Bash(git add:*)"
     ]
   }
 }

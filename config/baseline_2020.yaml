@@ -1,0 +1,10 @@
+year: 2020
+fluvial_score: 1051.6469444444444
+coastal_score: 2410.5730555555556
+total_score: 3462.2200000000003
+fluvial_hours: 1051.6469444444444
+coastal_hours: 2338.5730555555556
+fluvial_events: 23
+coastal_events: 72
+description: Baseline scores for 2020 (normalized to 100)
+created_at: /home/steve/projects/fwii/config/baseline_2020.yaml

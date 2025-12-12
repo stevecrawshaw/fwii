@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-The **Flood Warning Intensity Index (FWII)** is a duration-weighted composite indicator that tracks flood warning activity as a proxy for flooding events in the West of England. It provides annual monitoring to support climate resilience reporting to government under the DEFRA outcomes framework.
+The **Flood Warning Intensity Index (FWII)** is a duration-weighted composite indicator that tracks flood warning activity as a proxy for flooding events in the West of England. It provides annual monitoring to support climate resilience reporting to government under the West of England outcomes framework.
 
 ### Key Definition
 

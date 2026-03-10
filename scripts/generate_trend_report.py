@@ -17,7 +17,7 @@ def main():
     """Generate trend report."""
     print("=" * 100)
     print("WEST OF ENGLAND FLOOD WARNING INTENSITY INDEX (FWII)")
-    print("TREND REPORT 2020-2024")
+    print("TREND REPORT")
     print("=" * 100)
     print()
 
@@ -34,9 +34,14 @@ def main():
     # Results storage
     results = []
 
-    # Process each year
+    # Process each year — discover from available CSV files, baseline period only
     data_dir = Path(__file__).parent.parent / "data" / "processed"
-    for year in [2020, 2021, 2022, 2023, 2024]:
+    years = sorted(
+        int(p.stem.split("_")[1])
+        for p in data_dir.glob("warnings_*.csv")
+        if int(p.stem.split("_")[1]) >= 2020
+    )
+    for year in years:
         csv_path = data_dir / f"warnings_{year}.csv"
 
         if not csv_path.exists():
@@ -84,17 +89,20 @@ def main():
         prev = results[i - 1]
         curr = results[i]
         change = curr["composite_fwii"] - prev["composite_fwii"]
-        pct_change = ((curr["composite_fwii"] / prev["composite_fwii"]) - 1) * 100
+        if prev["composite_fwii"] != 0:
+            pct_str = f"({((curr['composite_fwii'] / prev['composite_fwii']) - 1) * 100:+6.1f}%)"
+        else:
+            pct_str = "(n/a)"
 
         arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
         print(
-            f"  {prev['year']} → {curr['year']}: {arrow} {abs(change):5.1f} points ({pct_change:+6.1f}%)"
+            f"  {prev['year']} → {curr['year']}: {arrow} {abs(change):5.1f} points {pct_str}"
         )
 
     print()
 
     # Overall trend
-    print("Overall Trend (2020-2024):")
+    print(f"Overall Trend ({results[0]['year']}-{results[-1]['year']}):")
     baseline = results[0]["composite_fwii"]
     latest = results[-1]["composite_fwii"]
     overall_change = latest - baseline
@@ -169,7 +177,7 @@ def main():
     total_warnings = sum(r["total_warnings"] for r in results)
     avg_warnings_per_year = total_warnings / len(results)
 
-    print(f"• Total warnings (2020-2024): {total_warnings}")
+    print(f"• Total warnings ({results[0]['year']}-{results[-1]['year']}): {total_warnings}")
     print(f"• Average warnings per year: {avg_warnings_per_year:.0f}")
     print()
 

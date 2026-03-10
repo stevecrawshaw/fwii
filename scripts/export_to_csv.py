@@ -43,7 +43,10 @@ def main():
     output_dir = Path(__file__).parent.parent / "data" / "processed"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for year in [2020, 2021, 2022, 2023, 2024]:
+    years = sorted(df["timeRaised"].dt.year().drop_nulls().unique().to_list())
+    print(f"Years found in data: {years}")
+
+    for year in years:
         year_df = loader.filter_by_year(df, year)
         output_path = output_dir / f"warnings_{year}.csv"
 

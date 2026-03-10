@@ -3,12 +3,8 @@
 import logging
 import sys
 from datetime import UTC, datetime
-from pathlib import Path
 
 import yaml
-
-# Add src to path so we can import fwii
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from fwii.api_client import FloodMonitoringClient
 from fwii.config import Config
@@ -24,7 +20,7 @@ def main():
     """Fetch all West of England flood warning areas and save to YAML."""
     logger.info("Starting flood warning areas fetch")
 
-    # Initialize config and client
+    # Initialise config and client
     config = Config()
     client = FloodMonitoringClient(config)
 

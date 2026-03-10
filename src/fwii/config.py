@@ -1,16 +1,21 @@
 """Configuration management for FWII project."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from fwii.indicator_calculator import BaselineScores
 
 
 class Config:
     """Load and manage FWII configuration from YAML files."""
 
     def __init__(self, config_path: str | Path | None = None):
-        """Initialize configuration.
+        """Initialise configuration.
 
         Args:
             config_path: Path to settings.yaml. If None, uses default location.
@@ -94,7 +99,7 @@ class Config:
 
     @property
     def baseline_year(self) -> int:
-        """Get the baseline year for normalization."""
+        """Get the baseline year for normalisation."""
         return self._config["indicator"]["baseline_year"]
 
     @property
@@ -143,6 +148,55 @@ class Config:
                 return default
 
         return value
+
+    @property
+    def warning_areas(self) -> list[dict]:
+        """Get the parsed list of warning area dicts from warning_areas.yaml."""
+        with open(self.warning_areas_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return data.get("warning_areas", [])
+
+    @property
+    def warning_area_codes(self) -> set[str]:
+        """Get set of fwdCode strings for West of England."""
+        return {area["fwdCode"] for area in self.warning_areas}
+
+    @property
+    def baseline(self) -> BaselineScores | None:
+        """Load and return BaselineScores from config, or None if not found."""
+        if not self.baseline_path.exists():
+            return None
+        from fwii.indicator_calculator import BaselineScores
+
+        with open(self.baseline_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return BaselineScores(
+            year=data["year"],
+            fluvial_score=data["fluvial_score"],
+            coastal_score=data["coastal_score"],
+            total_score=data["total_score"],
+            fluvial_hours=data.get("fluvial_hours", 0.0),
+            coastal_hours=data.get("coastal_hours", 0.0),
+            fluvial_events=data.get("fluvial_events", 0),
+            coastal_events=data.get("coastal_events", 0),
+        )
+
+    def save_baseline(self, baseline: BaselineScores) -> None:
+        """Save baseline scores to config/baseline_2020.yaml."""
+        self.baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "year": baseline.year,
+            "fluvial_score": baseline.fluvial_score,
+            "coastal_score": baseline.coastal_score,
+            "total_score": baseline.total_score,
+            "fluvial_hours": baseline.fluvial_hours,
+            "coastal_hours": baseline.coastal_hours,
+            "fluvial_events": baseline.fluvial_events,
+            "coastal_events": baseline.coastal_events,
+            "description": f"Baseline scores for {baseline.year} (normalised to 100)",
+        }
+        with open(self.baseline_path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
     @property
     def warning_areas_path(self) -> Path:

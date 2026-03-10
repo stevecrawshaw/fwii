@@ -1,15 +1,8 @@
 """Generate comprehensive FWII trend report for 2020-2024."""
 
-import sys
-from pathlib import Path
-
 import polars as pl
-import yaml
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from fwii.duration_calculator import DurationCalculator
+from fwii.config import Config
 from fwii.indicator_calculator import IndicatorCalculator
 
 
@@ -21,21 +14,16 @@ def main():
     print("=" * 100)
     print()
 
-    # Load config
-    config_path = Path(__file__).parent.parent / "config" / "warning_areas.yaml"
+    config = Config()
 
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    # Create calculator (will auto-load baseline from default location)
+    # Create calculator (will auto-load baseline from config)
     calculator = IndicatorCalculator()
-    duration_calc = DurationCalculator()
 
     # Results storage
     results = []
 
     # Process each year — discover from available CSV files, baseline period only
-    data_dir = Path(__file__).parent.parent / "data" / "processed"
+    data_dir = config.data_processed_path
     years = sorted(
         int(p.stem.split("_")[1])
         for p in data_dir.glob("warnings_*.csv")
@@ -182,9 +170,7 @@ def main():
     print()
 
     # Export CSV
-    output_path = (
-        Path(__file__).parent.parent / "data" / "outputs" / "fwii_timeseries.csv"
-    )
+    output_path = config.data_outputs_path / "fwii_timeseries.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     summary_df.write_csv(output_path)

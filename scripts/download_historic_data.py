@@ -20,38 +20,28 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add src to path to import fwii modules
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from fwii.config import Config
 from fwii.data_fetcher import HistoricWarningsFetcher
 from fwii.data_loader import HistoricWarningsLoader
-from fwii.db_storage import FloodWarningsDatabase
 from fwii.validators import HistoricWarningsValidator
 
-# Configure logging
+# Configure logging (file handler added in main after config is loaded)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("data/processed/pipeline.log"),
-    ],
 )
 
 logger = logging.getLogger(__name__)
 
 
-def setup_directories():
+def setup_directories(config: Config) -> None:
     """Create necessary directories if they don't exist."""
-    directories = [
-        "data/raw",
-        "data/processed",
-        "data/outputs",
-    ]
-
-    for directory in directories:
-        Path(directory).mkdir(parents=True, exist_ok=True)
+    for directory in [
+        config.data_raw_path,
+        config.data_processed_path,
+        config.data_outputs_path,
+    ]:
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 def process_single_year(
@@ -87,7 +77,7 @@ def process_single_year(
 
     # Stage 1: Download (only if not already provided)
     if data_dir is None:
-        logger.info("\n[1/4] DOWNLOADING DATA")
+        logger.info("\n[1/4] DOWNLOADING")
         try:
             with HistoricWarningsFetcher(config=config) as fetcher:
                 data_dir = fetcher.download_complete_dataset(
@@ -107,7 +97,7 @@ def process_single_year(
             results["errors"].append({"stage": "download", "error": str(e)})
             return results
     else:
-        logger.info(f"\n[1/4] USING CACHED DATA: {data_dir}")
+        logger.info(f"\n[1/4] USING CACHED: {data_dir}")
         results["stages"]["download"] = {
             "status": "cached",
             "data_directory": str(data_dir),
@@ -180,7 +170,7 @@ def process_single_year(
             }
 
             # Save validation report
-            report_path = Path(f"data/processed/data_quality_report_{year}.json")
+            report_path = config.data_processed_path / f"data_quality_report_{year}.json"
             with open(report_path, "w") as f:
                 json.dump(validation_report.get_summary(), f, indent=2, default=str)
 
@@ -191,36 +181,23 @@ def process_single_year(
             results["errors"].append({"stage": "validation", "error": str(e)})
             # Continue to storage even if validation fails
 
-    # Stage 4: Store
-    logger.info("\n[4/4] STORING IN DATABASE")
+    # Stage 4: Export CSV (isTidal already joined by loader)
+    logger.info("\n[4/4] EXPORTING CSV")
     try:
-        with FloodWarningsDatabase(config=config) as db:
-            # Initialize schema if first run
-            db.initialize_schema(drop_existing=False)
+        csv_path = config.data_processed_path / f"warnings_{year}.csv"
+        df.write_csv(csv_path)
 
-            # Store data
-            records_stored = db.store_warnings(
-                df=df,
-                source_file=str(data_dir),
-                replace=False,  # Append mode
-            )
+        results["stages"]["export"] = {
+            "status": "success",
+            "records_exported": len(df),
+            "output_path": str(csv_path),
+        }
 
-            results["stages"]["storage"] = {
-                "status": "success",
-                "records_stored": records_stored,
-            }
-
-            # Get database info
-            db_info = db.get_database_info()
-            results["stages"]["storage"]["database_info"] = db_info
-
-            logger.info(f"[OK] Stored {records_stored:,} records")
-            logger.info(f"  Database total: {db_info['total_records']:,} records")
-            logger.info(f"  Years covered: {db_info['years_covered']}")
+        logger.info(f"[OK] Exported {len(df):,} records to {csv_path}")
 
     except Exception as e:
-        logger.error(f"[ERROR] Storage failed: {e}")
-        results["errors"].append({"stage": "storage", "error": str(e)})
+        logger.error(f"[ERROR] Export failed: {e}")
+        results["errors"].append({"stage": "export", "error": str(e)})
         return results
 
     # Success!
@@ -317,7 +294,8 @@ def process_multiple_years(
     }
 
     # Save combined results
-    results_path = Path(f"data/processed/pipeline_results_{start_year}_{end_year}.json")
+    config = Config()
+    results_path = config.data_processed_path / f"pipeline_results_{start_year}_{end_year}.json"
     with open(results_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)
 
@@ -393,7 +371,13 @@ Examples:
         logging.getLogger().setLevel(logging.DEBUG)
 
     # Setup directories
-    setup_directories()
+    config = Config()
+    setup_directories(config)
+
+    # Add file handler now that directories exist
+    fh = logging.FileHandler(config.data_processed_path / "pipeline.log")
+    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    logging.getLogger().addHandler(fh)
 
     # Process years
     if args.end_year:

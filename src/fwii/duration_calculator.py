@@ -1,72 +1,33 @@
 """
-Duration calculator for flood warnings.
+Duration calculator for flood warnings (vectorised).
 
-This module handles the complex task of calculating warning durations given that
-the Environment Agency historic data does NOT include end times (severity level 4)
-for warnings.
-
-Approach:
----------
-Since each record represents a warning issuance without explicit end times, we use
-the following heuristic approach:
+Calculates warning durations using Polars expressions instead of row-by-row
+iteration. The heuristic approach is unchanged:
 
 1. Group warnings by fwdCode (warning area)
-2. For each area, sort warnings chronologically
-3. Calculate duration based on:
-   - Time until next warning for same area (if within max_gap)
-   - Default duration for that severity level
-   - Whichever is SMALLER (to avoid unrealistic long durations)
+2. Sort chronologically within each area
+3. Calculate duration based on gap to next warning vs default duration
+4. Special handling for "Update" messages
 
-4. Special handling for "Update" messages:
-   - These extend/continue previous warnings
-   - Don't start new warning periods
-
-Default Durations (configurable):
----------------------------------
+Default Durations:
 - Severe Flood Warning (level 1): 12 hours
 - Flood Warning (level 2): 24 hours
 - Flood Alert (level 3): 48 hours
 
-Maximum Gap (configurable):
----------------------------
-- If gap between warnings > max_gap (default 72 hours), treat as separate events
+Maximum Gap: 72 hours (treat as separate events if exceeded)
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 
 import polars as pl
-
-
-@dataclass
-class WarningEvent:
-    """Represents a single warning event with calculated duration."""
-
-    fwdCode: str
-    timeRaised: datetime
-    severityLevel: int
-    severity: str
-    duration_hours: float
-    is_update: bool
-    isTidal: bool | None = None
-
-    def calculate_score(self, severity_weights: dict[int, float]) -> float:
-        """Calculate weighted score for this warning event."""
-        weight = severity_weights.get(self.severityLevel, 0.0)
-        return self.duration_hours * weight
 
 
 @dataclass
 class DurationConfig:
     """Configuration for duration calculations."""
 
-    # Default durations by severity level (in hours)
     default_durations: dict[int, float] = None
-
-    # Maximum gap between warnings to consider them part of same event
     max_gap_hours: float = 72.0
-
-    # Severity weights for scoring
     severity_weights: dict[int, float] = None
 
     def __post_init__(self):
@@ -75,15 +36,15 @@ class DurationConfig:
                 1: 12.0,  # Severe Flood Warning
                 2: 24.0,  # Flood Warning
                 3: 48.0,  # Flood Alert
-                4: 0.0,  # Warning No Longer in Force (not used)
+                4: 0.0,   # Warning No Longer in Force
             }
 
         if self.severity_weights is None:
             self.severity_weights = {
-                1: 3.0,  # Severe × 3
-                2: 2.0,  # Warning × 2
-                3: 1.0,  # Alert × 1
-                4: 0.0,  # No longer in force × 0
+                1: 3.0,  # Severe x 3
+                2: 2.0,  # Warning x 2
+                3: 1.0,  # Alert x 1
+                4: 0.0,  # No longer in force x 0
             }
 
 
@@ -91,34 +52,28 @@ class DurationCalculator:
     """Calculate warning durations from historic flood warning data."""
 
     def __init__(self, config: DurationConfig | None = None):
-        """
-        Initialize calculator with configuration.
-
-        Args:
-            config: Configuration for duration calculations.
-                   If None, uses default configuration.
-        """
         self.config = config or DurationConfig()
 
-    def calculate_durations(self, df: pl.DataFrame) -> list[WarningEvent]:
-        """
-        Calculate durations for all warnings in the dataset.
+    def calculate_durations(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Calculate durations for all warnings using vectorised Polars expressions.
 
         Args:
-            df: Polars DataFrame with columns:
-                - fwdCode: Warning area code
-                - timeRaised: Timestamp of warning
-                - severityLevel: 1=Severe, 2=Warning, 3=Alert, 4=No longer in force
-                - severity: Text description
-                - isTidal: Boolean (optional)
+            df: DataFrame with columns: fwdCode, timeRaised, severityLevel, severity.
+                Optional: isTidal.
 
         Returns:
-            List of WarningEvent objects with calculated durations
+            DataFrame with added columns: is_update, gap_to_next_hours,
+            duration_hours, weight, score.
         """
         if df.height == 0:
-            return []
+            return df.with_columns(
+                pl.lit(False).alias("is_update"),
+                pl.lit(None, dtype=pl.Float64).alias("gap_to_next_hours"),
+                pl.lit(0.0).alias("duration_hours"),
+                pl.lit(0.0).alias("weight"),
+                pl.lit(0.0).alias("score"),
+            )
 
-        # Ensure required columns exist
         required = ["fwdCode", "timeRaised", "severityLevel", "severity"]
         missing = [col for col in required if col not in df.columns]
         if missing:
@@ -127,162 +82,129 @@ class DurationCalculator:
         # Sort by area and time
         df = df.sort(["fwdCode", "timeRaised"])
 
-        # Add flag for "Update" messages
+        # Add update flag and gap to next warning
         df = df.with_columns(
-            [pl.col("severity").str.contains("(?i)update").alias("is_update")]
-        )
-
-        # Calculate time to next warning for same area
-        df = df.with_columns(
-            [pl.col("timeRaised").shift(-1).over("fwdCode").alias("next_time")]
-        )
-
-        # Calculate gap in hours to next warning
-        df = df.with_columns(
-            [
+            pl.col("severity").str.contains("(?i)update").alias("is_update"),
+            (
                 (
-                    (pl.col("next_time") - pl.col("timeRaised")).dt.total_seconds()
-                    / 3600.0
-                ).alias("gap_to_next_hours")
-            ]
+                    pl.col("timeRaised").shift(-1).over("fwdCode")
+                    - pl.col("timeRaised")
+                ).dt.total_seconds()
+                / 3600.0
+            ).alias("gap_to_next_hours"),
         )
 
-        # Calculate duration using heuristic
-        events = []
+        # Map severity level to default duration
+        default_dur = pl.col("severityLevel").replace_strict(
+            self.config.default_durations,
+            default=24.0,
+            return_dtype=pl.Float64,
+        )
 
-        for row in df.iter_rows(named=True):
-            duration_hours = self._calculate_single_duration(
-                severity_level=row["severityLevel"],
-                gap_to_next=row.get("gap_to_next_hours"),
-                is_update=row["is_update"],
-            )
-
-            events.append(
-                WarningEvent(
-                    fwdCode=row["fwdCode"],
-                    timeRaised=row["timeRaised"],
-                    severityLevel=row["severityLevel"],
-                    severity=row["severity"],
-                    duration_hours=duration_hours,
-                    is_update=row["is_update"],
-                    isTidal=row.get("isTidal"),
-                )
-            )
-
-        return events
-
-    def _calculate_single_duration(
-        self, severity_level: int, gap_to_next: float | None, is_update: bool
-    ) -> float:
-        """
-        Calculate duration for a single warning.
-
-        Args:
-            severity_level: 1=Severe, 2=Warning, 3=Alert
-            gap_to_next: Hours until next warning for same area (or None)
-            is_update: Whether this is an "Update" message
-
-        Returns:
-            Duration in hours
-        """
-        default_duration = self.config.default_durations.get(severity_level, 24.0)
         max_gap = self.config.max_gap_hours
 
-        # If no next warning, use default duration
-        if gap_to_next is None:
-            return default_duration
+        # Vectorised duration calculation matching the original heuristic:
+        # if gap is null -> default_duration
+        # elif gap > max_gap -> default_duration
+        # elif is_update -> gap
+        # else -> min(gap, default_duration)
+        duration = (
+            pl.when(pl.col("gap_to_next_hours").is_null())
+            .then(default_dur)
+            .when(pl.col("gap_to_next_hours") > max_gap)
+            .then(default_dur)
+            .when(pl.col("is_update"))
+            .then(pl.col("gap_to_next_hours"))
+            .otherwise(pl.min_horizontal("gap_to_next_hours", default_dur))
+        )
 
-        # If gap is very large, treat as separate event
-        if gap_to_next > max_gap:
-            return default_duration
+        # Map severity to weight
+        weight = pl.col("severityLevel").replace_strict(
+            self.config.severity_weights,
+            default=0.0,
+            return_dtype=pl.Float64,
+        )
 
-        # For updates, use the gap (they continue existing warnings)
-        if is_update:
-            return gap_to_next
+        df = df.with_columns(
+            duration.alias("duration_hours"),
+            weight.alias("weight"),
+        )
 
-        # For new warnings, use minimum of gap and default
-        return min(gap_to_next, default_duration)
+        df = df.with_columns(
+            (pl.col("duration_hours") * pl.col("weight")).alias("score"),
+        )
+
+        return df
 
     def calculate_annual_scores(
-        self, events: list[WarningEvent], year: int, separate_tidal: bool = True
+        self, df: pl.DataFrame, year: int, separate_tidal: bool = True
     ) -> dict:
-        """
-        Calculate annual scores from warning events.
+        """Calculate annual scores from a DataFrame with duration/score columns.
 
         Args:
-            events: List of WarningEvent objects
-            year: Year to calculate for (filters events)
-            separate_tidal: If True, separate fluvial and coastal scores
+            df: DataFrame from calculate_durations() (must have duration_hours,
+                score, weight columns).
+            year: Year to calculate for.
+            separate_tidal: If True, separate fluvial and coastal scores.
 
         Returns:
-            Dictionary with score breakdown
+            Dictionary with score breakdown.
         """
-        # Filter to specified year
-        year_events = [e for e in events if e.timeRaised.year == year]
+        # Filter to year
+        year_df = df.filter(pl.col("timeRaised").dt.year() == year)
 
-        if not separate_tidal or not any(e.isTidal is not None for e in year_events):
-            # Calculate total score without separation
-            total_score = sum(
-                e.calculate_score(self.config.severity_weights) for e in year_events
-            )
+        has_tidal = "isTidal" in year_df.columns and separate_tidal
 
+        if not has_tidal:
+            total_score = year_df["score"].sum()
             return {
                 "year": year,
                 "total_score": total_score,
-                "total_events": len(year_events),
-                "total_hours": sum(e.duration_hours for e in year_events),
-                "by_severity": self._breakdown_by_severity(year_events),
+                "total_events": len(year_df),
+                "total_hours": year_df["duration_hours"].sum(),
+                "by_severity": self._breakdown_by_severity(year_df),
             }
 
-        # Separate fluvial and coastal
-        fluvial_events = [e for e in year_events if e.isTidal is False]
-        coastal_events = [e for e in year_events if e.isTidal is True]
-        other_events = [e for e in year_events if e.isTidal is None]
+        # Separate by tidal status
+        fluvial = year_df.filter(pl.col("isTidal") == False)  # noqa: E712
+        coastal = year_df.filter(pl.col("isTidal") == True)   # noqa: E712
+        other = year_df.filter(pl.col("isTidal").is_null())
 
-        fluvial_score = sum(
-            e.calculate_score(self.config.severity_weights) for e in fluvial_events
-        )
-        coastal_score = sum(
-            e.calculate_score(self.config.severity_weights) for e in coastal_events
-        )
-        other_score = sum(
-            e.calculate_score(self.config.severity_weights) for e in other_events
-        )
+        fluvial_score = fluvial["score"].sum()
+        coastal_score = coastal["score"].sum()
+        other_score = other["score"].sum()
 
         return {
             "year": year,
             "fluvial_score": fluvial_score,
             "coastal_score": coastal_score,
-            "other_score": other_score,  # Warnings with unknown tidal status
+            "other_score": other_score,
             "total_score": fluvial_score + coastal_score + other_score,
-            "fluvial_events": len(fluvial_events),
-            "coastal_events": len(coastal_events),
-            "other_events": len(other_events),
-            "total_events": len(year_events),
-            "fluvial_hours": sum(e.duration_hours for e in fluvial_events),
-            "coastal_hours": sum(e.duration_hours for e in coastal_events),
-            "other_hours": sum(e.duration_hours for e in other_events),
+            "fluvial_events": len(fluvial),
+            "coastal_events": len(coastal),
+            "other_events": len(other),
+            "total_events": len(year_df),
+            "fluvial_hours": fluvial["duration_hours"].sum(),
+            "coastal_hours": coastal["duration_hours"].sum(),
+            "other_hours": other["duration_hours"].sum(),
             "by_severity": {
-                "fluvial": self._breakdown_by_severity(fluvial_events),
-                "coastal": self._breakdown_by_severity(coastal_events),
-                "other": self._breakdown_by_severity(other_events),
-                "total": self._breakdown_by_severity(year_events),
+                "fluvial": self._breakdown_by_severity(fluvial),
+                "coastal": self._breakdown_by_severity(coastal),
+                "other": self._breakdown_by_severity(other),
+                "total": self._breakdown_by_severity(year_df),
             },
         }
 
-    def _breakdown_by_severity(self, events: list[WarningEvent]) -> dict:
+    def _breakdown_by_severity(self, df: pl.DataFrame) -> dict:
         """Create breakdown of events by severity level."""
         breakdown = {}
-
         for level in [1, 2, 3]:
-            level_events = [e for e in events if e.severityLevel == level]
+            level_df = df.filter(pl.col("severityLevel") == level)
+            hours = level_df["duration_hours"].sum() if len(level_df) else 0.0
+            score = level_df["score"].sum() if len(level_df) else 0.0
             breakdown[level] = {
-                "count": len(level_events),
-                "total_hours": sum(e.duration_hours for e in level_events),
-                "weighted_score": sum(
-                    e.calculate_score(self.config.severity_weights)
-                    for e in level_events
-                ),
+                "count": len(level_df),
+                "total_hours": hours,
+                "weighted_score": score,
             }
-
         return breakdown

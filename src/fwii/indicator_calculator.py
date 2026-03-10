@@ -1,22 +1,21 @@
 """
 Flood Warning Intensity Index (FWII) calculator.
 
-This module calculates normalized indicators and the composite FWII score
-based on baseline year (2020) normalization.
+This module calculates normalised indicators and the composite FWII score
+based on baseline year (2020) normalisation.
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 
 import polars as pl
-import yaml
 
+from .config import Config
 from .duration_calculator import DurationCalculator, DurationConfig
 
 
 @dataclass
 class BaselineScores:
-    """Baseline scores for normalization."""
+    """Baseline scores for normalisation."""
 
     year: int
     fluvial_score: float
@@ -30,7 +29,7 @@ class BaselineScores:
 
 @dataclass
 class NormalizedIndicators:
-    """Normalized flood warning intensity indicators."""
+    """Normalised flood warning intensity indicators."""
 
     year: int
 
@@ -39,7 +38,7 @@ class NormalizedIndicators:
     coastal_score_raw: float
     total_score_raw: float
 
-    # Normalized indicators (baseline year = 100)
+    # Normalised indicators (baseline year = 100)
     fluvial_index: float
     coastal_index: float
     composite_fwii: float
@@ -59,7 +58,7 @@ class NormalizedIndicators:
 
 class IndicatorCalculator:
     """
-    Calculate Flood Warning Intensity Index with baseline normalization.
+    Calculate Flood Warning Intensity Index with baseline normalisation.
 
     The composite FWII combines fluvial and coastal sub-indicators:
     FWII = (fluvial_index × 0.55) + (coastal_index × 0.45)
@@ -73,10 +72,10 @@ class IndicatorCalculator:
         coastal_weight: float = 0.45,
     ):
         """
-        Initialize indicator calculator.
+        Initialise indicator calculator.
 
         Args:
-            baseline: Baseline scores for normalization. If None, will be loaded
+            baseline: Baseline scores for normalisation. If None, will be loaded
                      from config/baseline_2020.yaml
             duration_config: Configuration for duration calculations
             fluvial_weight: Weight for fluvial component in composite (default 0.55)
@@ -87,72 +86,20 @@ class IndicatorCalculator:
                 f"Weights must sum to 1.0, got {fluvial_weight + coastal_weight}"
             )
 
+        self.config = Config()
         self.duration_calculator = DurationCalculator(duration_config)
         self.fluvial_weight = fluvial_weight
         self.coastal_weight = coastal_weight
 
         # Load or set baseline
         if baseline is None:
-            self.baseline = self._load_baseline()
+            self.baseline = self.config.baseline
         else:
             self.baseline = baseline
 
-    def _load_baseline(self) -> BaselineScores | None:
-        """Load baseline scores from configuration file."""
-        baseline_path = (
-            Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
-        )
-
-        if not baseline_path.exists():
-            # No baseline file exists yet
-            return None
-
-        with open(baseline_path) as f:
-            data = yaml.safe_load(f)
-
-        return BaselineScores(
-            year=data["year"],
-            fluvial_score=data["fluvial_score"],
-            coastal_score=data["coastal_score"],
-            total_score=data["total_score"],
-            fluvial_hours=data.get("fluvial_hours", 0.0),
-            coastal_hours=data.get("coastal_hours", 0.0),
-            fluvial_events=data.get("fluvial_events", 0),
-            coastal_events=data.get("coastal_events", 0),
-        )
-
-    def save_baseline(self, baseline: BaselineScores, output_path: Path | None = None):
-        """
-        Save baseline scores to configuration file.
-
-        Args:
-            baseline: Baseline scores to save
-            output_path: Path to save to (default: config/baseline_2020.yaml)
-        """
-        if output_path is None:
-            output_path = (
-                Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
-            )
-
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        data = {
-            "year": baseline.year,
-            "fluvial_score": baseline.fluvial_score,
-            "coastal_score": baseline.coastal_score,
-            "total_score": baseline.total_score,
-            "fluvial_hours": baseline.fluvial_hours,
-            "coastal_hours": baseline.coastal_hours,
-            "fluvial_events": baseline.fluvial_events,
-            "coastal_events": baseline.coastal_events,
-            "description": f"Baseline scores for {baseline.year} (normalized to 100)",
-            "created_at": str(
-                Path(__file__).parent.parent.parent / "config" / "baseline_2020.yaml"
-            ),
-        }
-
-        with open(output_path, "w") as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    def save_baseline(self, baseline: BaselineScores) -> None:
+        """Save baseline scores to configuration file."""
+        self.config.save_baseline(baseline)
 
     def calculate_indicators(self, df: pl.DataFrame, year: int) -> NormalizedIndicators:
         """
@@ -167,14 +114,14 @@ class IndicatorCalculator:
             NormalizedIndicators with calculated values
 
         Raises:
-            ValueError: If baseline is not set when trying to normalize
+            ValueError: If baseline is not set when trying to normalise
         """
-        # Calculate durations
-        events = self.duration_calculator.calculate_durations(df)
+        # Calculate durations (returns DataFrame with score columns)
+        df_with_durations = self.duration_calculator.calculate_durations(df)
 
         # Calculate annual scores
         scores = self.duration_calculator.calculate_annual_scores(
-            events, year, separate_tidal=True
+            df_with_durations, year, separate_tidal=True
         )
 
         # If this is the baseline year, save it
@@ -211,10 +158,11 @@ class IndicatorCalculator:
                 flood_alerts=scores["by_severity"]["total"][3]["count"],
             )
 
-        # Normalize against baseline
+        # Normalise against baseline
         if self.baseline is None:
             raise ValueError(
-                "Baseline scores not set. Calculate baseline year first or load from config."
+                "Baseline scores not set. Calculate baseline "
+                "year first or load from config."
             )
 
         fluvial_index = (

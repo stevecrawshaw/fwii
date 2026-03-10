@@ -39,14 +39,14 @@ class HistoricWarningsFetcher:
     def __init__(
         self, config: Config | None = None, output_dir: str | Path | None = None
     ):
-        """Initialize the fetcher.
+        """Initialise the fetcher.
 
         Args:
             config: Configuration object. If None, loads from default location.
             output_dir: Directory to save downloaded files. If None, uses data/raw/
         """
         self.config = config or Config()
-        self.output_dir = Path(output_dir) if output_dir else Path("data/raw")
+        self.output_dir = Path(output_dir) if output_dir else self.config.data_raw_path
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create httpx client with appropriate timeouts
@@ -179,39 +179,6 @@ class HistoricWarningsFetcher:
             msg = f"Error extracting ZIP file: {e}"
             logger.error(msg)
             raise DataFetchError(msg) from e
-
-    def download_historic_warnings(
-        self,
-        year: int | None = None,
-        force_download: bool = False,
-        extract: bool = True,
-    ) -> Path:
-        """Download historic flood warnings data.
-
-        This method downloads the complete dataset (2006-present) and returns
-        the path. Year filtering should be done during the loading phase.
-
-        Args:
-            year: Ignored (kept for backward compatibility). All years downloaded.
-            force_download: If True, download even if file already exists
-            extract: If True, extract ZIP contents after download
-
-        Returns:
-            Path to the downloaded (and optionally extracted) data directory
-
-        Raises:
-            DataFetchError: If download fails
-        """
-        if year is not None:
-            logger.info(
-                f"Note: Year {year} specified, but complete dataset "
-                "(2006-present) will be downloaded. Filter by year during loading."
-            )
-
-        return self.download_complete_dataset(
-            force_download=force_download,
-            extract=extract,
-        )
 
     def get_dataset_info(self) -> dict[str, str]:
         """Get information about the dataset source.

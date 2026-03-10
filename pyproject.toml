@@ -1,18 +1,16 @@
 [project]
-name = "vs-code-setup"
+name = "fwii"
 version = "0.1.0"
-description = "New VS code setup from template"
+description = "West of England Regional Flood Warning Intensity Index"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "ipykernel>=6.29.5",
-    "duckdb>=1.4.0",
     "polars>=1.32.0",
     "httpx>=0.27.0",
     "pyyaml",
     "pyarrow",
     "odfpy>=1.4.1",
-    "pandas>=2.3.3",
+    "pandas>=3.0.1",
 ]
 
 [dependency-groups]
@@ -21,3 +19,10 @@ dev = [
     "ruff>=0.9.3",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+fwii-pipeline = "fwii.cli:main_pipeline"
+fwii-calculate = "fwii.cli:main_calculate"
+fwii-trend = "fwii.cli:main_trend"

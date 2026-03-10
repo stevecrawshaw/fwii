@@ -1,56 +1,27 @@
 """
 Calculate Flood Warning Intensity Index (FWII) for a given year.
 
-This script calculates the complete FWII indicator with baseline normalization.
+This script calculates the complete FWII indicator with baseline normalisation.
 """
 
 import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import polars as pl
-import yaml
 
+from fwii.config import Config
 from fwii.indicator_calculator import IndicatorCalculator
 
 
-def load_warnings_with_tidal(year: int) -> pl.DataFrame:
-    """Load warnings for a year and join with warning areas for isTidal info."""
-    # Load from CSV export
-    csv_path = (
-        Path(__file__).parent.parent / "data" / "processed" / f"warnings_{year}.csv"
-    )
+def load_warnings(config: Config, year: int) -> pl.DataFrame | None:
+    """Load warnings CSV for a year (isTidal already present from pipeline)."""
+    csv_path = config.data_processed_path / f"warnings_{year}.csv"
 
     if not csv_path.exists():
         print(f"Error: Data file not found: {csv_path}")
         print(f"Run: uv run python scripts/download_historic_data.py {year}")
         return None
 
-    df = pl.read_csv(csv_path, try_parse_dates=True)
-
-    # Load warning areas to get isTidal information
-    config_path = Path(__file__).parent.parent / "config" / "warning_areas.yaml"
-    with open(config_path) as f:
-        areas_config = yaml.safe_load(f)
-
-    # Create lookup DataFrame for isTidal
-    areas_list = []
-    for area in areas_config["warning_areas"]:
-        areas_list.append(
-            {"fwdCode": area["fwdCode"], "isTidal": area.get("isTidal", None)}
-        )
-
-    areas_df = pl.DataFrame(areas_list)
-
-    # Join to add isTidal information
-    if "isTidal" in df.columns:
-        df = df.drop("isTidal")
-
-    df = df.join(areas_df, on="fwdCode", how="left")
-
-    return df
+    return pl.read_csv(csv_path, try_parse_dates=True)
 
 
 def main():
@@ -73,9 +44,11 @@ def main():
     print("=" * 100)
     print()
 
+    config = Config()
+
     # Load data
     print(f"Loading warning data for {year}...")
-    df = load_warnings_with_tidal(year)
+    df = load_warnings(config, year)
 
     if df is None:
         return 1
@@ -87,7 +60,7 @@ def main():
     print(f"  Coastal (isTidal=true): {coastal_count}")
     print()
 
-    # Initialize calculator
+    # Initialise calculator
     calculator = IndicatorCalculator()
 
     # Calculate indicators

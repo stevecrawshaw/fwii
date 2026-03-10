@@ -1,7 +1,7 @@
 """Data loader for historic flood warnings.
 
 Loads and parses historic flood warning data from CSV/JSON files,
-filtering for West of England areas and normalizing timestamps.
+filtering for West of England areas and normalising timestamps.
 """
 
 import logging
@@ -23,11 +23,11 @@ class HistoricWarningsLoader:
     """Loads and processes historic flood warning data.
 
     Handles CSV and JSON formats, filters for West of England warning areas,
-    and normalizes timestamps to UTC.
+    and normalises timestamps to UTC.
     """
 
     def __init__(self, config: Config | None = None):
-        """Initialize the loader.
+        """Initialise the loader.
 
         Args:
             config: Configuration object. If None, loads from default location.
@@ -51,18 +51,7 @@ class HistoricWarningsLoader:
             DataLoadError: If warning areas config cannot be loaded
         """
         try:
-            import yaml
-
-            warning_areas_path = Path("config/warning_areas.yaml")
-            if not warning_areas_path.exists():
-                msg = f"Warning areas config not found: {warning_areas_path}"
-                raise DataLoadError(msg)
-
-            with open(warning_areas_path) as f:
-                data = yaml.safe_load(f)
-
-            # Extract fwdCodes from the warning_areas list
-            codes = {area["fwdCode"] for area in data.get("warning_areas", [])}
+            codes = self.config.warning_area_codes
 
             if not codes:
                 msg = "No warning area codes found in config"
@@ -70,6 +59,8 @@ class HistoricWarningsLoader:
 
             return codes
 
+        except DataLoadError:
+            raise
         except Exception as e:
             msg = f"Error loading warning area codes: {e}"
             logger.error(msg)
@@ -89,7 +80,7 @@ class HistoricWarningsLoader:
             filter_west_of_england: If True, filter for West of England areas only
 
         Returns:
-            Polars DataFrame with normalized flood warning data
+            Polars DataFrame with normalised flood warning data
 
         Raises:
             DataLoadError: If file cannot be loaded or parsed
@@ -211,7 +202,7 @@ class HistoricWarningsLoader:
             raise DataLoadError(msg) from e
 
     def _normalize_schema(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Normalize column names and ensure required fields exist.
+        """Normalise column names and ensure required fields exist.
 
         Maps EA column names to our expected schema:
         - DATE -> timeRaised
@@ -222,7 +213,7 @@ class HistoricWarningsLoader:
             df: Raw DataFrame
 
         Returns:
-            DataFrame with normalized schema
+            DataFrame with normalised schema
 
         Raises:
             DataLoadError: If required fields are missing
@@ -241,21 +232,31 @@ class HistoricWarningsLoader:
             if old_name in df.columns:
                 df = df.rename({old_name: new_name})
 
-        # Map severity text to severity levels
-        # Severe Flood Warning = 1, Flood Warning = 2, Flood Alert = 3, No Longer in Force = 4
+        # Map severity text to severity levels using exact matching
+        SEVERITY_MAP = {
+            "Severe Flood Warning": 1,
+            "Flood Warning": 2,
+            "Flood Alert": 3,
+            "Warning No Longer in Force": 4,
+        }
+
         if "severity" in df.columns:
             df = df.with_columns(
-                pl.when(pl.col("severity").str.contains("(?i)severe"))
-                .then(pl.lit(1))
-                .when(pl.col("severity").str.contains("(?i)warning"))
-                .then(pl.lit(2))
-                .when(pl.col("severity").str.contains("(?i)alert"))
-                .then(pl.lit(3))
-                .when(pl.col("severity").str.contains("(?i)no longer"))
-                .then(pl.lit(4))
-                .otherwise(pl.lit(None))
+                pl.col("severity")
+                .replace_strict(SEVERITY_MAP, default=None, return_dtype=pl.Int64)
                 .alias("severityLevel")
             )
+
+            # Log any unmapped severity values
+            unmapped = df.filter(
+                pl.col("severityLevel").is_null() & pl.col("severity").is_not_null()
+            )
+            if len(unmapped) > 0:
+                unknown_values = unmapped["severity"].unique().to_list()
+                logger.warning(
+                    f"{len(unmapped)} unmapped severity values: "
+                    f"{unknown_values}"
+                )
 
         # Required fields after mapping
         required_fields = {
@@ -317,15 +318,28 @@ class HistoricWarningsLoader:
         return df
 
     def _filter_west_of_england(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Filter for West of England warning areas only.
+        """Filter for West of England warning areas and join isTidal.
 
         Args:
             df: DataFrame with all warning records
 
         Returns:
-            DataFrame filtered to West of England areas
+            DataFrame filtered to West of England areas with isTidal column
         """
-        return df.filter(pl.col("fwdCode").is_in(self.west_of_england_codes))
+        df = df.filter(pl.col("fwdCode").is_in(self.west_of_england_codes))
+
+        # Build isTidal lookup from config and join
+        areas_df = pl.DataFrame(
+            [
+                {"fwdCode": area["fwdCode"], "isTidal": area.get("isTidal", None)}
+                for area in self.config.warning_areas
+            ]
+        )
+
+        if "isTidal" in df.columns:
+            df = df.drop("isTidal")
+
+        return df.join(areas_df, on="fwdCode", how="left")
 
     def load_directory(
         self,
@@ -412,7 +426,7 @@ class HistoricWarningsLoader:
         """Generate summary statistics for loaded data.
 
         Args:
-            df: DataFrame to summarize
+            df: DataFrame to summarise
 
         Returns:
             Dictionary with summary statistics

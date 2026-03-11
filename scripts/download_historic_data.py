@@ -108,20 +108,37 @@ def process_single_year(
         loader = HistoricWarningsLoader(config=config)
 
         # Find CSV or ODS files in the extracted directory
-        csv_files = list(data_dir.glob("*.csv"))
-        ods_files = list(data_dir.glob("*.ods"))
+        csv_files = sorted(data_dir.glob("*.csv"))
+        ods_files = sorted(data_dir.glob("*.ods"))
 
         if not csv_files and not ods_files:
             raise FileNotFoundError(f"No CSV or ODS files found in {data_dir}")
 
         logger.info(f"Found {len(csv_files)} CSV file(s), {len(ods_files)} ODS file(s)")
 
-        # Load all data first
-        df = loader.load_directory(
-            directory=data_dir,
-            pattern="*.csv" if csv_files else "*.ods",
-            filter_west_of_england=True,
-        )
+        # When multiple ODS files exist, use only the most recent one
+        # (filenames are prefixed with YYYYMM so lexicographic sort works)
+        if not csv_files and len(ods_files) > 1:
+            latest_ods = ods_files[-1]
+            logger.warning(
+                f"Multiple ODS files found; using latest: {latest_ods.name} "
+                f"(skipping {[f.name for f in ods_files[:-1]]})"
+            )
+            ods_files = [latest_ods]
+
+        # Load data from the selected files
+        if csv_files:
+            df = loader.load_directory(
+                directory=data_dir,
+                pattern="*.csv",
+                filter_west_of_england=True,
+            )
+        else:
+            # Single ODS file — load directly instead of via load_directory
+            df = loader.load_historic_warnings(
+                file_path=ods_files[0],
+                filter_west_of_england=True,
+            )
 
         logger.info(f"Loaded {len(df):,} total West of England records")
 

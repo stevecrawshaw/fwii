@@ -120,7 +120,7 @@ class HistoricWarningsValidator:
     """
 
     def __init__(self, config: Config | None = None):
-        """Initialize the validator.
+        """Initialise the validator.
 
         Args:
             config: Configuration object. If None, loads from default location.
@@ -226,7 +226,7 @@ class HistoricWarningsValidator:
                 ValidationIssue(
                     severity="error",
                     category="Invalid Severity Levels",
-                    message=f"Records have severity levels outside valid range {valid_levels}",
+                    message=f"Severity levels outside range {valid_levels}",
                     count=len(invalid),
                     examples=invalid.head(3).to_dicts(),
                 )

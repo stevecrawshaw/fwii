@@ -28,12 +28,8 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python calculate_fwii.py <year> [--save-baseline]")
         print("\nExamples:")
-        print(
-            "  python calculate_fwii.py 2020 --save-baseline  # Calculate and save 2020 baseline"
-        )
-        print(
-            "  python calculate_fwii.py 2024                  # Calculate 2024 normalized to 2020"
-        )
+        print("  python calculate_fwii.py 2020 --save-baseline")
+        print("  python calculate_fwii.py 2024")
         return 1
 
     year = int(sys.argv[1])
@@ -75,61 +71,66 @@ def main():
     print()
 
     print("RAW SCORES (Duration-Weighted)")
-    print("-" * 100)
+    print("-" * 80)
+    i = indicators
     print(
-        f"  Fluvial Score:    {indicators.fluvial_score_raw:8.1f}  ({indicators.fluvial_events} events, {indicators.fluvial_hours:.1f} hours)"
+        f"  Fluvial Score:  {i.fluvial_score_raw:8.1f}"
+        f"  ({i.fluvial_events} events, {i.fluvial_hours:.1f} hours)"
     )
     print(
-        f"  Coastal Score:    {indicators.coastal_score_raw:8.1f}  ({indicators.coastal_events} events, {indicators.coastal_hours:.1f} hours)"
+        f"  Coastal Score:  {i.coastal_score_raw:8.1f}"
+        f"  ({i.coastal_events} events, {i.coastal_hours:.1f} hours)"
     )
     print(
-        f"  Total Score:      {indicators.total_score_raw:8.1f}  ({indicators.total_events} events)"
+        f"  Total Score:    {i.total_score_raw:8.1f}"
+        f"  ({i.total_events} events)"
     )
     print()
 
-    print("NORMALIZED INDICATORS (Baseline 2020 = 100)")
-    print("-" * 100)
-    print(f"  Fluvial Index:    {indicators.fluvial_index:8.1f}")
-    print(f"  Coastal Index:    {indicators.coastal_index:8.1f}")
+    print("NORMALISED INDICATORS (Baseline 2020 = 100)")
+    print("-" * 80)
+    print(f"  Fluvial Index:  {i.fluvial_index:8.1f}")
+    print(f"  Coastal Index:  {i.coastal_index:8.1f}")
     print()
     print(
-        f"  COMPOSITE FWII:   {indicators.composite_fwii:8.1f}  (55% fluvial + 45% coastal)"
+        f"  COMPOSITE FWII: {i.composite_fwii:8.1f}"
+        f"  (55% fluvial + 45% coastal)"
     )
     print()
 
     print("WARNING COUNTS BY SEVERITY")
-    print("-" * 100)
-    print(f"  Severe Flood Warnings (Level 1):  {indicators.severe_warnings}")
-    print(f"  Flood Warnings (Level 2):         {indicators.flood_warnings}")
-    print(f"  Flood Alerts (Level 3):           {indicators.flood_alerts}")
+    print("-" * 80)
+    print(f"  Severe Flood Warnings (Level 1):  {i.severe_warnings}")
+    print(f"  Flood Warnings (Level 2):         {i.flood_warnings}")
+    print(f"  Flood Alerts (Level 3):           {i.flood_alerts}")
     print()
 
     # Interpretation
     print("INTERPRETATION")
-    print("-" * 100)
+    print("-" * 80)
     if year == 2020:
-        print("  This is the BASELINE year. All indices normalized to 100.")
+        print("  This is the BASELINE year. All indices normalised to 100.")
     else:
-        if indicators.composite_fwii > 100:
-            pct = indicators.composite_fwii - 100
-            print(f"  {pct:.1f}% HIGHER flood warning activity than 2020 baseline")
-        elif indicators.composite_fwii < 100:
-            pct = 100 - indicators.composite_fwii
-            print(f"  {pct:.1f}% LOWER flood warning activity than 2020 baseline")
+        if i.composite_fwii > 100:
+            pct = i.composite_fwii - 100
+            print(f"  {pct:.1f}% HIGHER than 2020 baseline")
+        elif i.composite_fwii < 100:
+            pct = 100 - i.composite_fwii
+            print(f"  {pct:.1f}% LOWER than 2020 baseline")
         else:
-            print("  Same flood warning activity as 2020 baseline")
+            print("  Same as 2020 baseline")
 
         print()
         print("  Component changes from baseline:")
-        if indicators.fluvial_index > 100:
-            print(f"    - Fluvial: {indicators.fluvial_index - 100:.1f}% increase")
+        if i.fluvial_index > 100:
+            print(f"    - Fluvial: {i.fluvial_index - 100:.1f}% increase")
         else:
-            print(f"    - Fluvial: {100 - indicators.fluvial_index:.1f}% decrease")
+            print(f"    - Fluvial: {100 - i.fluvial_index:.1f}% decrease")
 
-        if indicators.coastal_index > 100:
-            print(f"    - Coastal: {indicators.coastal_index - 100:.1f}% increase")
+        if i.coastal_index > 100:
+            print(f"    - Coastal: {i.coastal_index - 100:.1f}% increase")
         else:
-            print(f"    - Coastal: {100 - indicators.coastal_index:.1f}% decrease")
+            print(f"    - Coastal: {100 - i.coastal_index:.1f}% decrease")
 
     print()
 

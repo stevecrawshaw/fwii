@@ -8,10 +8,10 @@ from fwii.indicator_calculator import IndicatorCalculator
 
 def main():
     """Generate trend report."""
-    print("=" * 100)
+    print("=" * 80)
     print("WEST OF ENGLAND FLOOD WARNING INTENSITY INDEX (FWII)")
     print("TREND REPORT")
-    print("=" * 100)
+    print("=" * 80)
     print()
 
     config = Config()
@@ -22,7 +22,7 @@ def main():
     # Results storage
     results = []
 
-    # Process each year — discover from available CSV files, baseline period only
+    # Process each year -- discover from available CSV files, baseline period only
     data_dir = config.data_processed_path
     years = sorted(
         int(p.stem.split("_")[1])
@@ -33,7 +33,7 @@ def main():
         csv_path = data_dir / f"warnings_{year}.csv"
 
         if not csv_path.exists():
-            print(f"⚠ Warning: No data for {year}")
+            print(f"Warning: No data for {year}")
             continue
 
         # Load data
@@ -43,8 +43,8 @@ def main():
         indicators = calculator.calculate_indicators(df, year)
 
         # Count warnings by type
-        fluvial_count = len(df.filter(pl.col("isTidal") == False))
-        coastal_count = len(df.filter(pl.col("isTidal") == True))
+        fluvial_count = len(df.filter(~pl.col("isTidal")))
+        coastal_count = len(df.filter(pl.col("isTidal")))
 
         results.append(
             {
@@ -62,43 +62,48 @@ def main():
     summary_df = pl.DataFrame(results)
 
     print("ANNUAL SUMMARY")
-    print("-" * 100)
+    print("-" * 80)
     print(summary_df)
     print()
 
     # Calculate trends
     print("TRENDS & INSIGHTS")
-    print("-" * 100)
+    print("-" * 80)
     print()
 
     # Year-on-year changes
     print("Year-on-Year Changes in Composite FWII:")
-    for i in range(1, len(results)):
-        prev = results[i - 1]
-        curr = results[i]
+    for idx in range(1, len(results)):
+        prev = results[idx - 1]
+        curr = results[idx]
         change = curr["composite_fwii"] - prev["composite_fwii"]
         if prev["composite_fwii"] != 0:
-            pct_str = f"({((curr['composite_fwii'] / prev['composite_fwii']) - 1) * 100:+6.1f}%)"
+            ratio = curr["composite_fwii"] / prev["composite_fwii"]
+            pct_str = f"({(ratio - 1) * 100:+6.1f}%)"
         else:
             pct_str = "(n/a)"
 
-        arrow = "↑" if change > 0 else "↓" if change < 0 else "→"
+        arrow = "^" if change > 0 else "v" if change < 0 else "-"
         print(
-            f"  {prev['year']} → {curr['year']}: {arrow} {abs(change):5.1f} points {pct_str}"
+            f"  {prev['year']} -> {curr['year']}: "
+            f"{arrow} {abs(change):5.1f} pts {pct_str}"
         )
 
     print()
 
     # Overall trend
-    print(f"Overall Trend ({results[0]['year']}-{results[-1]['year']}):")
+    first_yr = results[0]["year"]
+    last_yr = results[-1]["year"]
+    print(f"Overall Trend ({first_yr}-{last_yr}):")
     baseline = results[0]["composite_fwii"]
     latest = results[-1]["composite_fwii"]
     overall_change = latest - baseline
     overall_pct = ((latest / baseline) - 1) * 100
 
-    arrow = "↑" if overall_change > 0 else "↓" if overall_change < 0 else "→"
+    arrow = "^" if overall_change > 0 else "v" if overall_change < 0 else "-"
     print(
-        f"  {arrow} {abs(overall_change):5.1f} points ({overall_pct:+6.1f}%) from baseline"
+        f"  {arrow} {abs(overall_change):5.1f} pts "
+        f"({overall_pct:+6.1f}%) from baseline"
     )
     print()
 
@@ -108,21 +113,21 @@ def main():
     print("Fluvial (River) Flooding:")
     for result in results:
         bar_length = int(result["fluvial_index"] / 5)
-        bar = "█" * bar_length
+        bar = "#" * bar_length
         print(f"  {result['year']}: {result['fluvial_index']:6.1f} {bar}")
 
     print()
     print("Coastal/Tidal Flooding:")
     for result in results:
         bar_length = int(result["coastal_index"] / 5)
-        bar = "█" * bar_length
+        bar = "#" * bar_length
         print(f"  {result['year']}: {result['coastal_index']:6.1f} {bar}")
 
     print()
 
     # Key findings
     print("KEY FINDINGS")
-    print("-" * 100)
+    print("-" * 80)
     print()
 
     # Find min/max years
@@ -130,10 +135,12 @@ def main():
     max_year = max(results, key=lambda x: x["composite_fwii"])
 
     print(
-        f"• Lowest Activity: {min_year['year']} (FWII = {min_year['composite_fwii']})"
+        f"  Lowest Activity: {min_year['year']} "
+        f"(FWII = {min_year['composite_fwii']})"
     )
     print(
-        f"• Highest Activity: {max_year['year']} (FWII = {max_year['composite_fwii']})"
+        f"  Highest Activity: {max_year['year']} "
+        f"(FWII = {max_year['composite_fwii']})"
     )
     print()
 
@@ -143,20 +150,24 @@ def main():
 
     if fluvial_trend > 0:
         print(
-            f"• Fluvial flooding warnings have INCREASED by {fluvial_trend:.1f} points (+{fluvial_trend:.0f}%)"
+            f"  Fluvial: INCREASED by {fluvial_trend:.1f} pts"
+            f" (+{fluvial_trend:.0f}%)"
         )
     else:
         print(
-            f"• Fluvial flooding warnings have DECREASED by {abs(fluvial_trend):.1f} points ({fluvial_trend:.0f}%)"
+            f"  Fluvial: DECREASED by {abs(fluvial_trend):.1f} pts"
+            f" ({fluvial_trend:.0f}%)"
         )
 
     if coastal_trend > 0:
         print(
-            f"• Coastal flooding warnings have INCREASED by {coastal_trend:.1f} points (+{coastal_trend:.0f}%)"
+            f"  Coastal: INCREASED by {coastal_trend:.1f} pts"
+            f" (+{coastal_trend:.0f}%)"
         )
     else:
         print(
-            f"• Coastal flooding warnings have DECREASED by {abs(coastal_trend):.1f} points ({coastal_trend:.0f}%)"
+            f"  Coastal: DECREASED by {abs(coastal_trend):.1f} pts"
+            f" ({coastal_trend:.0f}%)"
         )
 
     print()
@@ -165,8 +176,8 @@ def main():
     total_warnings = sum(r["total_warnings"] for r in results)
     avg_warnings_per_year = total_warnings / len(results)
 
-    print(f"• Total warnings ({results[0]['year']}-{results[-1]['year']}): {total_warnings}")
-    print(f"• Average warnings per year: {avg_warnings_per_year:.0f}")
+    print(f"  Total warnings ({first_yr}-{last_yr}): {total_warnings}")
+    print(f"  Average warnings per year: {avg_warnings_per_year:.0f}")
     print()
 
     # Export CSV
@@ -174,12 +185,12 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     summary_df.write_csv(output_path)
-    print(f"✓ Time series data exported to: {output_path}")
+    print(f"Time series data exported to: {output_path}")
     print()
 
-    print("=" * 100)
+    print("=" * 80)
     print("REPORT COMPLETE")
-    print("=" * 100)
+    print("=" * 80)
 
 
 if __name__ == "__main__":

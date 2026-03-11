@@ -76,7 +76,7 @@ class HistoricWarningsLoader:
 
         Args:
             file_path: Path to CSV, JSON, or ODS file
-            format: File format ('csv', 'json', or 'ods'). If None, infers from extension
+            format: File format. If None, infers from extension
             filter_west_of_england: If True, filter for West of England areas only
 
         Returns:
@@ -254,8 +254,7 @@ class HistoricWarningsLoader:
             if len(unmapped) > 0:
                 unknown_values = unmapped["severity"].unique().to_list()
                 logger.warning(
-                    f"{len(unmapped)} unmapped severity values: "
-                    f"{unknown_values}"
+                    f"{len(unmapped)} unmapped severity values: {unknown_values}"
                 )
 
         # Required fields after mapping

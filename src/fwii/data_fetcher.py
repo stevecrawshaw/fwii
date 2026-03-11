@@ -107,14 +107,18 @@ class HistoricWarningsFetcher:
 
                         # Log progress every 1MB for smaller files
                         if total_size > 0 and downloaded_size % (1024 * 1024) < 8192:
-                            percent = (downloaded_size / total_size) * 100
+                            pct = (downloaded_size / total_size) * 100
+                            dl_mb = downloaded_size / (1024 * 1024)
+                            tot_mb = total_size / (1024 * 1024)
                             logger.info(
-                                f"Download progress: {downloaded_size / (1024 * 1024):.1f}MB / "
-                                f"{total_size / (1024 * 1024):.1f}MB ({percent:.1f}%)"
+                                f"Download progress: {dl_mb:.1f}MB"
+                                f" / {tot_mb:.1f}MB ({pct:.1f}%)"
                             )
 
+            dl_mb = downloaded_size / (1024 * 1024)
             logger.info(
-                f"Download complete: {downloaded_size / (1024 * 1024):.1f}MB saved to {output_path}"
+                f"Download complete: {dl_mb:.1f}MB"
+                f" saved to {output_path}"
             )
 
         except httpx.HTTPStatusError as e:

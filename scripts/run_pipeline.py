@@ -48,9 +48,7 @@ def main() -> int:
         action="store_true",
         help="Run full pipeline: download + calculate + trend",
     )
-    parser.add_argument(
-        "-f", "--force", action="store_true", help="Force re-download"
-    )
+    parser.add_argument("-f", "--force", action="store_true", help="Force re-download")
 
     args = parser.parse_args()
     config = Config()
@@ -64,15 +62,21 @@ def main() -> int:
     print("=" * 80)
 
     import subprocess
+
     scripts_dir = config.project_root / "scripts"
 
     # Step 1: Download if --full
     if args.full:
         print("\n[1] Downloading data...")
-        cmd = [sys.executable, str(scripts_dir / "download_historic_data.py"), str(start), str(end)]
+        cmd = [
+            sys.executable,
+            str(scripts_dir / "download_historic_data.py"),
+            str(start),
+            str(end),
+        ]
         if args.force:
             cmd.append("--force")
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # noqa: S603
         if result.returncode != 0:
             print("Download had failures. Check logs.")
             return 1
@@ -86,7 +90,9 @@ def main() -> int:
     # Step 3: Trend report if range or --full
     if len(years) > 1 or args.full:
         print("\n[3] Generating trend report...")
-        subprocess.run([sys.executable, str(scripts_dir / "generate_trend_report.py")])
+        subprocess.run(  # noqa: S603
+            [sys.executable, str(scripts_dir / "generate_trend_report.py")]
+        )
     else:
         print("\n[3] Skipping trend report (single year)")
 

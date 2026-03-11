@@ -26,8 +26,8 @@ def main():
 
     print(f"Loaded {df.height} warnings from 2020")
     print(f"Date range: {df['timeRaised'].min()} to {df['timeRaised'].max()}")
-    print(f"  Fluvial (isTidal=false): {df.filter(pl.col('isTidal') == False).height}")
-    print(f"  Coastal (isTidal=true): {df.filter(pl.col('isTidal') == True).height}")
+    print(f"  Fluvial (isTidal=false): {df.filter(~pl.col('isTidal')).height}")
+    print(f"  Coastal (isTidal=true): {df.filter(pl.col('isTidal')).height}")
     print(f"  Unknown: {df.filter(pl.col('isTidal').is_null()).height}")
     print()
 
@@ -68,9 +68,8 @@ def main():
     print(f"  Coastal: {scores['coastal_events']}")
     print(f"  Other: {scores['other_events']}")
     print()
-    print(
-        f"Total Warning Hours (unweighted): {scores['fluvial_hours'] + scores['coastal_hours']:.1f}"
-    )
+    total_hours = scores["fluvial_hours"] + scores["coastal_hours"]
+    print(f"Total Warning Hours (unweighted): {total_hours:.1f}")
     print(f"  Fluvial: {scores['fluvial_hours']:.1f} hours")
     print(f"  Coastal: {scores['coastal_hours']:.1f} hours")
     print(f"  Other: {scores['other_hours']:.1f} hours")

@@ -4,8 +4,7 @@ Complete pipeline script that:
 1. Downloads historic flood warnings for specified years
 2. Loads and parses the CSV/JSON data
 3. Validates data quality
-4. Stores in DuckDB database
-5. Generates quality reports
+4. Exports per-year CSVs to data/processed/
 
 Usage:
     python scripts/download_historic_data.py 2020
@@ -141,9 +140,9 @@ def process_single_year(
 
         logger.info(f"[OK] Loaded {len(df):,} records")
         logger.info(f"  Unique warning areas: {summary['unique_warning_areas']}")
-        logger.info(
-            f"  Date range: {summary['date_range']['earliest']} to {summary['date_range']['latest']}"
-        )
+        earliest = summary["date_range"]["earliest"]
+        latest = summary["date_range"]["latest"]
+        logger.info(f"  Date range: {earliest} to {latest}")
 
     except Exception as e:
         logger.error(f"[ERROR] Load failed: {e}")
@@ -170,7 +169,9 @@ def process_single_year(
             }
 
             # Save validation report
-            report_path = config.data_processed_path / f"data_quality_report_{year}.json"
+            report_path = (
+                config.data_processed_path / f"data_quality_report_{year}.json"
+            )
             with open(report_path, "w") as f:
                 json.dump(validation_report.get_summary(), f, indent=2, default=str)
 
@@ -295,7 +296,9 @@ def process_multiple_years(
 
     # Save combined results
     config = Config()
-    results_path = config.data_processed_path / f"pipeline_results_{start_year}_{end_year}.json"
+    results_path = (
+        config.data_processed_path / f"pipeline_results_{start_year}_{end_year}.json"
+    )
     with open(results_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)
 
@@ -376,7 +379,9 @@ Examples:
 
     # Add file handler now that directories exist
     fh = logging.FileHandler(config.data_processed_path / "pipeline.log")
-    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    fh.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
     logging.getLogger().addHandler(fh)
 
     # Process years

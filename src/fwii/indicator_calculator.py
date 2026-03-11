@@ -5,6 +5,7 @@ This module calculates normalised indicators and the composite FWII score
 based on baseline year (2020) normalisation.
 """
 
+import math
 from dataclasses import dataclass
 
 import polars as pl
@@ -81,7 +82,7 @@ class IndicatorCalculator:
             fluvial_weight: Weight for fluvial component in composite (default 0.55)
             coastal_weight: Weight for coastal component in composite (default 0.45)
         """
-        if fluvial_weight + coastal_weight != 1.0:
+        if not math.isclose(fluvial_weight + coastal_weight, 1.0):
             raise ValueError(
                 f"Weights must sum to 1.0, got {fluvial_weight + coastal_weight}"
             )
@@ -124,9 +125,9 @@ class IndicatorCalculator:
             df_with_durations, year, separate_tidal=True
         )
 
-        # If this is the baseline year, save it
-        if self.baseline is None or year == self.baseline.year:
-            baseline = BaselineScores(
+        # If no baseline exists, use this year's scores as the baseline
+        if self.baseline is None:
+            self.baseline = BaselineScores(
                 year=year,
                 fluvial_score=scores["fluvial_score"],
                 coastal_score=scores["coastal_score"],
@@ -137,34 +138,7 @@ class IndicatorCalculator:
                 coastal_events=scores["coastal_events"],
             )
 
-            if self.baseline is None:
-                self.baseline = baseline
-
-            return NormalizedIndicators(
-                year=year,
-                fluvial_score_raw=scores["fluvial_score"],
-                coastal_score_raw=scores["coastal_score"],
-                total_score_raw=scores["total_score"],
-                fluvial_index=100.0,
-                coastal_index=100.0,
-                composite_fwii=100.0,
-                fluvial_hours=scores["fluvial_hours"],
-                coastal_hours=scores["coastal_hours"],
-                fluvial_events=scores["fluvial_events"],
-                coastal_events=scores["coastal_events"],
-                total_events=scores["total_events"],
-                severe_warnings=scores["by_severity"]["total"][1]["count"],
-                flood_warnings=scores["by_severity"]["total"][2]["count"],
-                flood_alerts=scores["by_severity"]["total"][3]["count"],
-            )
-
-        # Normalise against baseline
-        if self.baseline is None:
-            raise ValueError(
-                "Baseline scores not set. Calculate baseline "
-                "year first or load from config."
-            )
-
+        # Normalise against baseline (baseline year will naturally produce 100.0)
         fluvial_index = (
             (scores["fluvial_score"] / self.baseline.fluvial_score) * 100.0
             if self.baseline.fluvial_score > 0

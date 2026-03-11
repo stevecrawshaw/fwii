@@ -47,10 +47,27 @@ def _make_warnings(
 
 
 class TestBaselineYear:
-    def test_baseline_year_returns_index_100(self, baseline: BaselineScores):
-        """Baseline year should return all indices at 100."""
-        calculator = IndicatorCalculator(baseline=baseline)
+    def test_baseline_year_returns_index_100(self):
+        """Baseline year should return all indices at 100 when baseline matches data."""
+        # Calculate scores first, then use them as the baseline
+        from fwii.duration_calculator import DurationCalculator
+
         df = _make_warnings(10, 20, year=2020)
+        dc = DurationCalculator()
+        df_dur = dc.calculate_durations(df)
+        scores = dc.calculate_annual_scores(df_dur, 2020, separate_tidal=True)
+
+        baseline = BaselineScores(
+            year=2020,
+            fluvial_score=scores["fluvial_score"],
+            coastal_score=scores["coastal_score"],
+            total_score=scores["total_score"],
+            fluvial_hours=scores["fluvial_hours"],
+            coastal_hours=scores["coastal_hours"],
+            fluvial_events=scores["fluvial_events"],
+            coastal_events=scores["coastal_events"],
+        )
+        calculator = IndicatorCalculator(baseline=baseline)
         indicators = calculator.calculate_indicators(df, 2020)
 
         assert indicators.fluvial_index == pytest.approx(100.0)

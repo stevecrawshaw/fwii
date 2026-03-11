@@ -166,6 +166,13 @@ class HistoricWarningsFetcher:
                 file_list = zip_ref.namelist()
                 logger.info(f"ZIP contains {len(file_list)} files")
 
+                # Validate paths to prevent Zip Slip (path traversal)
+                for member in file_list:
+                    target = (extract_dir / member).resolve()
+                    if not target.is_relative_to(extract_dir.resolve()):
+                        msg = f"ZIP member escapes target directory: {member}"
+                        raise DataFetchError(msg)
+
                 # Extract all files
                 zip_ref.extractall(extract_dir)
 

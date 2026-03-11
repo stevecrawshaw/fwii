@@ -90,9 +90,12 @@ def main() -> int:
     # Step 3: Trend report if range or --full
     if len(years) > 1 or args.full:
         print("\n[3] Generating trend report...")
-        subprocess.run(  # noqa: S603
+        result = subprocess.run(  # noqa: S603
             [sys.executable, str(scripts_dir / "generate_trend_report.py")]
         )
+        if result.returncode != 0:
+            print("Trend report generation failed.")
+            return 1
     else:
         print("\n[3] Skipping trend report (single year)")
 

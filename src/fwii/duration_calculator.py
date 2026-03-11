@@ -26,9 +26,9 @@ import polars as pl
 class DurationConfig:
     """Configuration for duration calculations."""
 
-    default_durations: dict[int, float] = None
+    default_durations: dict[int, float] | None = None
     max_gap_hours: float = 72.0
-    severity_weights: dict[int, float] = None
+    severity_weights: dict[int, float] | None = None
 
     def __post_init__(self):
         if self.default_durations is None:
@@ -84,7 +84,7 @@ class DurationCalculator:
 
         # Add update flag and gap to next warning
         df = df.with_columns(
-            pl.col("severity").str.contains("(?i)update").alias("is_update"),
+            pl.col("severity").str.contains(r"(?i)^update\s").alias("is_update"),
             (
                 (
                     pl.col("timeRaised").shift(-1).over("fwdCode")

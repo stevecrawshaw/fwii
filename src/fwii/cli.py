@@ -1,28 +1,34 @@
 """CLI entry points for FWII pipeline."""
 
-import runpy
+import importlib.util
 import sys
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
 
 
+def _import_script(name: str):
+    """Import a script module by file path."""
+    script_path = SCRIPTS_DIR / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, script_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def main_pipeline() -> None:
     """Unified pipeline entry point (fwii-pipeline)."""
-    script = SCRIPTS_DIR / "run_pipeline.py"
-    sys.argv[0] = str(script)
-    runpy.run_path(str(script), run_name="__main__")
+    module = _import_script("run_pipeline")
+    sys.exit(module.main())
 
 
 def main_calculate() -> None:
     """Calculate FWII entry point (fwii-calculate)."""
-    script = SCRIPTS_DIR / "calculate_fwii.py"
-    sys.argv[0] = str(script)
-    runpy.run_path(str(script), run_name="__main__")
+    module = _import_script("calculate_fwii")
+    sys.exit(module.main())
 
 
 def main_trend() -> None:
     """Trend report entry point (fwii-trend)."""
-    script = SCRIPTS_DIR / "generate_trend_report.py"
-    sys.argv[0] = str(script)
-    runpy.run_path(str(script), run_name="__main__")
+    module = _import_script("generate_trend_report")
+    module.main()

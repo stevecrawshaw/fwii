@@ -2,119 +2,96 @@
 
 Tracked from critical code review on 2026-03-11.
 Blocking issues (#1-5) already fixed in commit `12ca72f`.
+Items #6-15, #17 fixed in follow-up commit (see below).
 
 ## Required Changes
 
-### #6 Missing encoding='utf-8' in scripts
+### #6 Missing encoding='utf-8' in scripts -- DONE
 
 **Files:**
 - `scripts/download_historic_data.py:192` -- JSON write (validation report)
 - `scripts/download_historic_data.py:319` -- JSON write (pipeline results)
 - `scripts/fetch_warning_areas.py:103` -- YAML write (warning areas)
 
-**Fix:** Add `encoding='utf-8'` to all three `open()` calls.
+**Fix:** Added `encoding='utf-8'` to all three `open()` calls.
 
 ---
 
-### #7 DurationConfig type hints
+### #7 DurationConfig type hints -- DONE
 
 **File:** `src/fwii/duration_calculator.py:29-30`
 
-```python
-# Current (wrong)
-default_durations: dict[int, float] = None
-severity_weights: dict[int, float] = None
-
-# Correct
-default_durations: dict[int, float] | None = None
-severity_weights: dict[int, float] | None = None
-```
+**Fix:** Changed to `dict[int, float] | None = None` for both fields.
 
 ---
 
-### #8 Trend report subprocess failure swallowed
+### #8 Trend report subprocess failure swallowed -- DONE
 
 **File:** `scripts/run_pipeline.py:93`
 
-`subprocess.run` for the trend report ignores the return code. If it fails, the pipeline reports success.
-
-**Fix:** Check `result.returncode` or use `check=True`.
+**Fix:** Captured return value and check `result.returncode`, returning 1 on failure.
 
 ---
 
-### #9 cli.py uses runpy instead of direct imports
+### #9 cli.py uses runpy instead of direct imports -- DONE
 
 **File:** `src/fwii/cli.py`
 
-`runpy.run_path` with `sys.argv[0]` mutation is fragile. `SystemExit` propagates unpredictably.
-
-**Fix:** Import each script's `main()` function directly and call it. Handle return codes properly.
+**Fix:** Replaced `runpy.run_path` with `importlib.util` to import script modules by path. Each entry point calls `module.main()` and passes the return code to `sys.exit()`.
 
 ---
 
-### #10 DataLoadError re-wrapping
+### #10 DataLoadError re-wrapping -- DONE
 
 **File:** `src/fwii/data_loader.py:140-143`
 
-Generic `except Exception` catches and re-wraps `DataLoadError` from inner methods, losing the original message structure.
-
-**Fix:** Add `except DataLoadError: raise` before the generic catch.
+**Fix:** Added `except DataLoadError: raise` before the generic `except Exception` catch.
 
 ---
 
-### #11 Silent file-load failures in load_directory
+### #11 Silent file-load failures in load_directory -- DONE
 
 **File:** `src/fwii/data_loader.py:391`
 
-Files that fail to load are silently skipped with a log message. Caller has no visibility.
-
-**Fix:** Track failures and either raise after all files are attempted or return them alongside the DataFrame.
+**Fix:** Tracked failures in a list and log a warning with failed file names after processing all files.
 
 ---
 
-### #12 ValueError on malformed CSV filenames
+### #12 ValueError on malformed CSV filenames -- DONE
 
 **File:** `scripts/generate_trend_report.py:28-30`
 
-`int(p.stem.split("_")[1])` crashes on non-numeric suffixes matching the glob.
-
-**Fix:** Wrap in try/except or use a regex to validate the filename before parsing.
+**Fix:** Replaced generator expression with explicit loop using try/except around `int()` conversion.
 
 ---
 
-### #13 Manual sys.argv parsing in calculate_fwii.py
+### #13 Manual sys.argv parsing in calculate_fwii.py -- DONE
 
 **File:** `scripts/calculate_fwii.py:28-36`
 
-Every other script uses argparse. This one parses `sys.argv` manually with no validation.
-
-**Fix:** Replace with argparse, matching the pattern in other scripts.
+**Fix:** Replaced manual `sys.argv` parsing with `argparse`, matching the pattern in other scripts.
 
 ---
 
 ## Suggestions (Lower Priority)
 
-### #14 IndicatorCalculator always instantiates Config()
+### #14 IndicatorCalculator always instantiates Config() -- DONE
 
 **File:** `src/fwii/indicator_calculator.py:90`
 
-Creates `Config()` unconditionally even when baseline is provided externally.
-
-**Fix:** Accept `config` as optional parameter, lazy-load if needed.
+**Fix:** Added optional `config` parameter; `Config()` is now lazy-loaded via a property only when needed.
 
 ---
 
-### #15 FloodMonitoringClient not used as context manager
+### #15 FloodMonitoringClient not used as context manager -- DONE
 
 **File:** `scripts/fetch_warning_areas.py:26`
 
-Class has `__enter__`/`__exit__` but script uses manual `close()` in `finally`.
-
-**Fix:** Use `with FloodMonitoringClient(config) as client:` consistently.
+**Fix:** Replaced manual `close()` in `finally` with `with FloodMonitoringClient(config) as client:`.
 
 ---
 
-### #16 Test coverage gaps
+### #16 Test coverage gaps -- TODO
 
 Missing tests for:
 - `validators.py` -- no tests at all
@@ -125,10 +102,8 @@ Missing tests for:
 
 ---
 
-### #17 is_update regex matches too broadly
+### #17 is_update regex matches too broadly -- DONE
 
 **File:** `src/fwii/duration_calculator.py:87`
 
-`str.contains("(?i)update")` matches "update" anywhere in the string. Should anchor to prefix.
-
-**Fix:** Change to `str.contains("(?i)^update\\s")` or similar.
+**Fix:** Changed pattern from `(?i)update` to `(?i)^update\s` to anchor to start-of-string with trailing whitespace.

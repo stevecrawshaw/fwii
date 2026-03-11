@@ -71,6 +71,7 @@ class IndicatorCalculator:
         duration_config: DurationConfig | None = None,
         fluvial_weight: float = 0.55,
         coastal_weight: float = 0.45,
+        config: Config | None = None,
     ):
         """
         Initialise indicator calculator.
@@ -81,13 +82,14 @@ class IndicatorCalculator:
             duration_config: Configuration for duration calculations
             fluvial_weight: Weight for fluvial component in composite (default 0.55)
             coastal_weight: Weight for coastal component in composite (default 0.45)
+            config: Configuration object. If None, created only when needed.
         """
         if not math.isclose(fluvial_weight + coastal_weight, 1.0):
             raise ValueError(
                 f"Weights must sum to 1.0, got {fluvial_weight + coastal_weight}"
             )
 
-        self.config = Config()
+        self._config = config
         self.duration_calculator = DurationCalculator(duration_config)
         self.fluvial_weight = fluvial_weight
         self.coastal_weight = coastal_weight
@@ -97,6 +99,12 @@ class IndicatorCalculator:
             self.baseline = self.config.baseline
         else:
             self.baseline = baseline
+
+    @property
+    def config(self) -> Config:
+        if self._config is None:
+            self._config = Config()
+        return self._config
 
     def save_baseline(self, baseline: BaselineScores) -> None:
         """Save baseline scores to configuration file."""

@@ -189,7 +189,7 @@ def process_single_year(
             report_path = (
                 config.data_processed_path / f"data_quality_report_{year}.json"
             )
-            with open(report_path, "w") as f:
+            with open(report_path, "w", encoding="utf-8") as f:
                 json.dump(validation_report.get_summary(), f, indent=2, default=str)
 
             logger.info(f"[OK] Validation complete: {report_path}")
@@ -316,7 +316,7 @@ def process_multiple_years(
     results_path = (
         config.data_processed_path / f"pipeline_results_{start_year}_{end_year}.json"
     )
-    with open(results_path, "w") as f:
+    with open(results_path, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, default=str)
 
     logger.info(f"\n{'=' * 80}")

@@ -4,6 +4,7 @@ Calculate Flood Warning Intensity Index (FWII) for a given year.
 This script calculates the complete FWII indicator with baseline normalisation.
 """
 
+import argparse
 import sys
 
 import polars as pl
@@ -25,15 +26,19 @@ def load_warnings(config: Config, year: int) -> pl.DataFrame | None:
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python calculate_fwii.py <year> [--save-baseline]")
-        print("\nExamples:")
-        print("  python calculate_fwii.py 2020 --save-baseline")
-        print("  python calculate_fwii.py 2024")
-        return 1
+    parser = argparse.ArgumentParser(
+        description="Calculate Flood Warning Intensity Index (FWII) for a given year",
+    )
+    parser.add_argument("year", type=int, help="Year to calculate FWII for")
+    parser.add_argument(
+        "--save-baseline",
+        action="store_true",
+        help="Save 2020 scores as baseline (only valid for year 2020)",
+    )
 
-    year = int(sys.argv[1])
-    save_baseline = "--save-baseline" in sys.argv
+    args = parser.parse_args()
+    year = args.year
+    save_baseline = args.save_baseline
 
     print("=" * 100)
     print(f"CALCULATING FLOOD WARNING INTENSITY INDEX (FWII) FOR {year}")

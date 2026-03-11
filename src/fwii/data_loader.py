@@ -137,6 +137,8 @@ class HistoricWarningsLoader:
 
             return df
 
+        except DataLoadError:
+            raise
         except Exception as e:
             msg = f"Error loading data from {file_path}: {e}"
             logger.error(msg)
@@ -381,6 +383,7 @@ class HistoricWarningsLoader:
 
         # Load and combine all files
         dfs = []
+        failures = []
         for file_path in files:
             try:
                 df = self.load_historic_warnings(
@@ -390,11 +393,19 @@ class HistoricWarningsLoader:
                 dfs.append(df)
             except Exception as e:
                 logger.error(f"Error loading {file_path}: {e}")
+                failures.append((file_path, str(e)))
                 continue
 
         if not dfs:
             msg = "Failed to load any files"
             raise DataLoadError(msg)
+
+        if failures:
+            failed_names = [str(p) for p, _ in failures]
+            logger.warning(
+                f"{len(failures)} of {len(files)} files failed to load: "
+                f"{failed_names}"
+            )
 
         # Combine all DataFrames
         combined_df = pl.concat(dfs, how="vertical")

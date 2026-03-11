@@ -22,12 +22,12 @@ def main():
 
     # Initialise config and client
     config = Config()
-    client = FloodMonitoringClient(config)
 
     try:
-        # Fetch all areas
-        logger.info(f"Fetching areas for counties: {', '.join(config.counties)}")
-        areas = client.get_all_west_of_england_areas()
+        with FloodMonitoringClient(config) as client:
+            # Fetch all areas
+            logger.info(f"Fetching areas for counties: {', '.join(config.counties)}")
+            areas = client.get_all_west_of_england_areas()
 
         # Process and structure the data
         warning_areas = []
@@ -100,7 +100,7 @@ def main():
         output_path = config.warning_areas_path
         logger.info(f"Saving {len(warning_areas)} areas to {output_path}")
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(output, f, default_flow_style=False, sort_keys=False)
 
         # Print summary
@@ -121,9 +121,6 @@ def main():
     except Exception as e:
         logger.error(f"Error fetching warning areas: {e}", exc_info=True)
         sys.exit(1)
-
-    finally:
-        client.close()
 
 
 if __name__ == "__main__":

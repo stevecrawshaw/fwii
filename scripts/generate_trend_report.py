@@ -24,11 +24,15 @@ def main():
 
     # Process each year -- discover from available CSV files, baseline period only
     data_dir = config.data_processed_path
-    years = sorted(
-        int(p.stem.split("_")[1])
-        for p in data_dir.glob("warnings_*.csv")
-        if int(p.stem.split("_")[1]) >= 2020
-    )
+    years = []
+    for p in data_dir.glob("warnings_*.csv"):
+        try:
+            year_val = int(p.stem.split("_")[1])
+        except (IndexError, ValueError):
+            continue
+        if year_val >= 2020:
+            years.append(year_val)
+    years.sort()
     for year in years:
         csv_path = data_dir / f"warnings_{year}.csv"
 

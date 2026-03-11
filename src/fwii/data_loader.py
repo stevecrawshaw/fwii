@@ -232,17 +232,22 @@ class HistoricWarningsLoader:
             if old_name in df.columns:
                 df = df.rename({old_name: new_name})
 
-        # Map severity text to severity levels using exact matching
+        # Map severity text to severity levels
+        # Case-insensitive, strips "Update " prefix, maps legacy "Flood Watch" to Alert
         SEVERITY_MAP = {
-            "Severe Flood Warning": 1,
-            "Flood Warning": 2,
-            "Flood Alert": 3,
-            "Warning No Longer in Force": 4,
+            "severe flood warning": 1,
+            "flood warning": 2,
+            "flood alert": 3,
+            "flood watch": 3,  # Pre-2011 equivalent of Flood Alert
+            "warning no longer in force": 4,
         }
 
         if "severity" in df.columns:
             df = df.with_columns(
                 pl.col("severity")
+                .str.strip_chars()
+                .str.replace(r"(?i)^Update\s+", "")
+                .str.to_lowercase()
                 .replace_strict(SEVERITY_MAP, default=None, return_dtype=pl.Int64)
                 .alias("severityLevel")
             )

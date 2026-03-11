@@ -32,7 +32,9 @@
       "Skill(version-control)",
       "Bash(cd C:/Users/steve.crawshaw/projects/fwii && duckdb data/processed/fwii.duckdb -c \"SELECT MIN\\(timeRaised\\) AS earliest, MAX\\(timeRaised\\) AS latest, COUNT\\(*\\) AS records FROM flood_warnings WHERE YEAR\\(timeRaised\\) = 2025\")",
       "Bash(cd C:/Users/steve.crawshaw/projects/fwii && duckdb data/processed/fwii.duckdb -c \"SELECT MIN\\(timeRaised\\) AS earliest, MAX\\(timeRaised\\) AS latest, COUNT\\(*\\) AS records FROM warnings WHERE YEAR\\(timeRaised\\) = 2025\")",
-      "Bash(tree -L 3 /c/Users/steve.crawshaw/projects/fwii/ -I '.venv|.git|__pycache__|.serena|.pytest_cache|.mypy_cache' 2>/dev/null || find /c/Users/steve.crawshaw/projects/fwii -type d -not -path '*/\\\\.*' -not -path '*/__pycache__*' -not -path '*/.venv*' | sort)"
+      "Bash(tree -L 3 /c/Users/steve.crawshaw/projects/fwii/ -I '.venv|.git|__pycache__|.serena|.pytest_cache|.mypy_cache' 2>/dev/null || find /c/Users/steve.crawshaw/projects/fwii -type d -not -path '*/\\\\.*' -not -path '*/__pycache__*' -not -path '*/.venv*' | sort)",
+      "Bash(git status:*)",
+      "Bash(cd C:/Users/steve.crawshaw/projects/fwii && uv run python -c \"\nimport polars as pl\nimport pandas as pd\nfrom pathlib import Path\n\nraw_dir = Path\\('data/raw/historic_flood_warnings'\\)\nods_files = sorted\\(raw_dir.glob\\('*.ods'\\)\\)\nfor f in ods_files:\n    print\\(f'=== {f.name} ==='\\)\n    pdf = pd.read_excel\\(f, engine='odf'\\)\n    df = pl.from_pandas\\(pdf\\)\n    print\\(f'  Total rows: {df.height}'\\)\n    print\\(f'  Columns: {df.columns}'\\)\n    if 'TYPE' in df.columns:\n        print\\(f'  TYPE values: {df[\\\\\"TYPE\\\\\"].unique\\(\\).to_list\\(\\)[:10]}'\\)\n    print\\(\\)\n\" 2>&1 | head -30)"
     ]
   }
 }

@@ -36,7 +36,7 @@ class DurationConfig:
                 1: 12.0,  # Severe Flood Warning
                 2: 24.0,  # Flood Warning
                 3: 48.0,  # Flood Alert
-                4: 0.0,   # Warning No Longer in Force
+                4: 0.0,  # Warning No Longer in Force
             }
 
         if self.severity_weights is None:
@@ -167,7 +167,7 @@ class DurationCalculator:
 
         # Separate by tidal status
         fluvial = year_df.filter(pl.col("isTidal") == False)  # noqa: E712
-        coastal = year_df.filter(pl.col("isTidal") == True)   # noqa: E712
+        coastal = year_df.filter(pl.col("isTidal") == True)  # noqa: E712
         other = year_df.filter(pl.col("isTidal").is_null())
 
         fluvial_score = fluvial["score"].sum()
